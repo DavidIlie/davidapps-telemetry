@@ -1,4 +1,4 @@
-# `@davidapps/telemetry-node`
+# `@davidilie/telemetry-node`
 
 OpenTelemetry-backed events, logs, measurements, exceptions, and spans for
 Node.js. Use the `/register` entrypoint in a standalone process. Use the root
@@ -7,7 +7,7 @@ entrypoint when a framework already owns the OpenTelemetry provider.
 Node.js 20 or newer is supported. The package publishes ESM and CommonJS.
 
 ```sh
-pnpm add @davidapps/telemetry-node @opentelemetry/api
+pnpm add @davidilie/telemetry-node @opentelemetry/api
 ```
 
 ## Standalone Node.js
@@ -15,7 +15,7 @@ pnpm add @davidapps/telemetry-node @opentelemetry/api
 Import registration before modules that need to be auto-instrumented.
 
 ```ts
-import { registerNodeTelemetry } from "@davidapps/telemetry-node/register";
+import { registerNodeTelemetry } from "@davidilie/telemetry-node/register";
 
 const deployedSha = process.env.GIT_SHA!;
 const telemetry = registerNodeTelemetry({
@@ -79,7 +79,7 @@ Frameworks such as Next.js may already own provider registration. Create only
 the client from the runtime-light root entrypoint:
 
 ```ts
-import { createNodeTelemetry } from "@davidapps/telemetry-node";
+import { createNodeTelemetry } from "@davidilie/telemetry-node";
 
 const telemetry = createNodeTelemetry({
   resource: {
@@ -181,7 +181,7 @@ import {
   recordException,
   startSpan,
   withSpan,
-} from "@davidapps/telemetry-node";
+} from "@davidilie/telemetry-node";
 ```
 
 These use the globally registered provider and do not add a client's resource
@@ -220,5 +220,5 @@ context; `startSpan` does not.
 - `onError(error, context)` receives contained hook/adapter/span/lifecycle
   failures. Its own failure is ignored; never recurse into the same client.
 
-See the [core API](https://www.npmjs.com/package/@davidapps/telemetry-core), [privacy rules](https://github.com/DavidIlie/davidapps-telemetry/blob/main/docs/privacy.md), and
+See the [core API](https://www.npmjs.com/package/@davidilie/telemetry-core), [privacy rules](https://github.com/DavidIlie/davidapps-telemetry/blob/main/docs/privacy.md), and
 [troubleshooting guide](https://github.com/DavidIlie/davidapps-telemetry/blob/main/docs/troubleshooting.md).

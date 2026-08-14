@@ -1,5 +1,5 @@
 // This root entry point is runtime-neutral. Provider registration lives in
-// `@davidapps/telemetry-next/node` so Edge evaluation never imports Node code.
+// `@davidilie/telemetry-next/node` so Edge evaluation never imports Node code.
 export {
   createNextRequestErrorHandler,
   type NextRequestErrorContext,

@@ -1,4 +1,4 @@
-import { initializeWebTelemetry } from "@davidapps/telemetry-web";
+import { initializeWebTelemetry } from "@davidilie/telemetry-web";
 
 const enabled = process.env.NEXT_PUBLIC_TELEMETRY_ENABLED === "true";
 const url = process.env.NEXT_PUBLIC_TELEMETRY_INGEST_URL;

@@ -1,7 +1,7 @@
 import {
   createNextRequestErrorHandler,
   type NextRequestErrorHandler,
-} from "@davidapps/telemetry-next";
+} from "@davidilie/telemetry-next";
 import type { Instrumentation } from "next";
 
 let reportRequestError: NextRequestErrorHandler | undefined;
@@ -17,7 +17,7 @@ export async function register(): Promise<void> {
   }
 
   const { registerNextTelemetry } = await import(
-    "@davidapps/telemetry-next/node"
+    "@davidilie/telemetry-next/node"
   );
   const telemetry = registerNextTelemetry({
     resource: {

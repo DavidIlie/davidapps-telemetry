@@ -6,7 +6,7 @@ import {
   type Attributes,
   type TelemetryAdapter,
   type TelemetrySpan,
-} from "@davidapps/telemetry-core";
+} from "@davidilie/telemetry-core";
 import { installFetchInstrumentation } from "./fetch.js";
 
 class TestSpan implements TelemetrySpan {

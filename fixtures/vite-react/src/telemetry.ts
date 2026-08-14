@@ -1,4 +1,4 @@
-import { initializeWebTelemetry } from "@davidapps/telemetry-web";
+import { initializeWebTelemetry } from "@davidilie/telemetry-web";
 
 const ingestUrl = import.meta.env.VITE_TELEMETRY_INGEST_URL;
 const enabled = import.meta.env.VITE_TELEMETRY_ENABLED === "true";

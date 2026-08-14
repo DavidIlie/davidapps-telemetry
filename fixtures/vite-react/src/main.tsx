@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import {
   reportReactError,
   TelemetryErrorBoundary,
-} from "@davidapps/telemetry-web/react";
+} from "@davidilie/telemetry-web/react";
 import { App } from "./App.js";
 import "./styles.css";
 

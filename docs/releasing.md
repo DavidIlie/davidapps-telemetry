@@ -12,8 +12,8 @@ The workflow publishes the exact verified tarballs it uploads as an artifact.
 
 The npm owner must:
 
-1. Own or create the `@davidapps` scope and confirm every package name is
-   available/authorized.
+1. Authenticate as npm user `davidilie` and confirm every package name under
+   the user-owned `@davidilie` scope is available.
 2. Configure the GitHub `npm` environment used by `.github/workflows/release.yml`.
 3. Bootstrap packages that cannot yet use trusted publishing with a short-lived
    npm automation/granular token stored as that environment's `NPM_TOKEN`.
@@ -62,7 +62,7 @@ Review the packed README for each package because it is the npm landing page:
 PACK_DIR="$(mktemp -d)"
 pnpm packages:pack --output "$PACK_DIR"
 jq . "$PACK_DIR/manifest.json"
-tar -xOf "$PACK_DIR/davidapps-telemetry-core-0.1.1.tgz" package/README.md | less
+tar -xOf "$PACK_DIR/davidilie-telemetry-core-0.1.1.tgz" package/README.md | less
 ```
 
 Use the exact generated filename from `manifest.json`; npm tarball filename
@@ -106,7 +106,7 @@ After the job succeeds:
 
 ```sh
 for package in core web node next react-native; do
-  npm view "@davidapps/telemetry-$package@0.1.1" \
+  npm view "@davidilie/telemetry-$package@0.1.1" \
     version dist.integrity dist.tarball --json
 done
 ```

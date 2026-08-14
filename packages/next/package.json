@@ -1,5 +1,5 @@
 {
-  "name": "@davidapps/telemetry-next",
+  "name": "@davidilie/telemetry-next",
   "version": "0.1.1",
   "description": "Runtime-safe Next.js telemetry backed by @vercel/otel.",
   "keywords": [
@@ -66,8 +66,8 @@
     "clean": "rm -rf dist coverage"
   },
   "dependencies": {
-    "@davidapps/telemetry-core": "workspace:*",
-    "@davidapps/telemetry-node": "workspace:*",
+    "@davidilie/telemetry-core": "workspace:*",
+    "@davidilie/telemetry-node": "workspace:*",
     "@opentelemetry/sdk-trace-base": "2.10.0",
     "@vercel/otel": "2.1.3"
   },

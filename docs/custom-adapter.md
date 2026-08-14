@@ -20,7 +20,7 @@ import {
   type TelemetrySpanOptions,
   type TelemetrySpanStatus,
   type TraceContext,
-} from "@davidapps/telemetry-core";
+} from "@davidilie/telemetry-core";
 
 class StandardProtocolAdapter implements TelemetryAdapter {
   constructor(private readonly exporter: StandardExporter) {}

@@ -77,7 +77,7 @@ function releaseManifest(package_, version) {
     for (const [name, range] of Object.entries(dependencies)) {
       if (typeof range !== "string" || !range.startsWith("workspace:")) continue;
       assert(
-        name.startsWith("@davidapps/telemetry-"),
+        name.startsWith("@davidilie/telemetry-"),
         `${package_.manifest.name}: cannot publish non-internal workspace dependency ${name}`,
       );
       dependencies[name] = version;
@@ -190,7 +190,7 @@ export async function packPackages({ output } = {}) {
           !dependencyVersion.startsWith("workspace:"),
           `${package_.manifest.name}: ${name} still uses ${dependencyVersion}`,
         );
-        if (name.startsWith("@davidapps/telemetry-")) {
+        if (name.startsWith("@davidilie/telemetry-")) {
           assert(
             dependencyVersion === package_.manifest.version,
             `${package_.manifest.name}: internal ${name} must be exactly ${package_.manifest.version}`,

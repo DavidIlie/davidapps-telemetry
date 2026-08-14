@@ -10,8 +10,8 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@davidapps/telemetry-core": "workspace:*",
-    "@davidapps/telemetry-react-native": "workspace:*",
+    "@davidilie/telemetry-core": "workspace:*",
+    "@davidilie/telemetry-react-native": "workspace:*",
     "expo": "57.0.13",
     "expo-constants": "57.0.11",
     "react": "19.2.3",

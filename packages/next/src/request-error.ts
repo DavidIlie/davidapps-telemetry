@@ -1,4 +1,4 @@
-import type { Attributes } from "@davidapps/telemetry-core";
+import type { Attributes } from "@davidilie/telemetry-core";
 
 export interface NextRequestErrorDetails {
   path: string;

@@ -99,7 +99,7 @@ effort.
 ### Spans/metrics are no-ops
 
 The root `createNodeTelemetry` uses registered APIs only. A standalone service
-must import `@davidapps/telemetry-node/register`; a framework must register its
+must import `@davidilie/telemetry-node/register`; a framework must register its
 own provider. Metrics additionally need a reader/exporter.
 
 ### Duplicate spans or provider errors
@@ -107,7 +107,7 @@ own provider. Metrics additionally need a reader/exporter.
 Register one provider:
 
 - Standalone Node: `/register`
-- Next.js: `@davidapps/telemetry-next/node` / `@vercel/otel`
+- Next.js: `@davidilie/telemetry-next/node` / `@vercel/otel`
 - Other framework: its provider plus the root Node client
 
 Never combine Node `/register` with Next registration.
@@ -125,8 +125,8 @@ or disable OTel Logs when container stdout is the intentional route.
 
 ### Next Edge build imports Node code
 
-The root `@davidapps/telemetry-next` entry is runtime-neutral. Dynamically import
-`@davidapps/telemetry-next/node` only after checking
+The root `@davidilie/telemetry-next` entry is runtime-neutral. Dynamically import
+`@davidilie/telemetry-next/node` only after checking
 `process.env.NEXT_RUNTIME === "nodejs"`. Never re-export the Node registration
 from client/shared code.
 

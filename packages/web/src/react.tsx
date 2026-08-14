@@ -7,7 +7,7 @@ import {
   type ErrorInfo,
   type ReactNode,
 } from "react";
-import type { TelemetryClient } from "@davidapps/telemetry-core";
+import type { TelemetryClient } from "@davidilie/telemetry-core";
 import {
   getWebTelemetryClient,
   initializeWebTelemetry,

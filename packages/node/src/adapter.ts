@@ -19,13 +19,13 @@ import type {
   TelemetrySpanOptions,
   TelemetrySpanStatus,
   TraceContext,
-} from "@davidapps/telemetry-core";
+} from "@davidilie/telemetry-core";
 import {
   redactText,
   sanitizeAttributes,
   sanitizeResource,
   sanitizeSignal,
-} from "@davidapps/telemetry-core";
+} from "@davidilie/telemetry-core";
 import {
   telemetryResourceAttributes,
   toOtelAttributes,
@@ -410,7 +410,7 @@ export function startSpan(
   options: TelemetrySpanOptions = {},
 ): TelemetrySpan {
   return new OpenTelemetrySpan(
-    trace.getTracer("@davidapps/telemetry-node").startSpan(redactText(name, 256), {
+    trace.getTracer("@davidilie/telemetry-node").startSpan(redactText(name, 256), {
       kind: spanKinds[options.kind ?? "internal"],
       attributes: toOtelAttributes(sanitizeAttributes(attributes)),
     }),
@@ -424,7 +424,7 @@ export async function withSpan<T>(
   options: TelemetrySpanOptions = {},
 ): Promise<T> {
   return trace
-    .getTracer("@davidapps/telemetry-node")
+    .getTracer("@davidilie/telemetry-node")
     .startActiveSpan(
       redactText(name, 256),
       {
@@ -463,7 +463,7 @@ export function recordException(
   attributes: Attributes = {},
 ): void {
   const activeSpan = trace.getActiveSpan();
-  const span = activeSpan ?? trace.getTracer("@davidapps/telemetry-node").startSpan("exception");
+  const span = activeSpan ?? trace.getTracer("@davidilie/telemetry-node").startSpan("exception");
   span.setAttributes(toOtelAttributes(sanitizeAttributes(attributes)));
   span.recordException(exceptionForOtel(error));
   span.setStatus({

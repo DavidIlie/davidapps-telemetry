@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import type { TelemetryClient, TelemetrySpan, TraceContext } from "@davidapps/telemetry-core";
+import type { TelemetryClient, TelemetrySpan, TraceContext } from "@davidilie/telemetry-core";
 
 export type UrlMatcher = string | RegExp;
 
@@ -16,7 +16,7 @@ interface SpanWithTraceContext extends TelemetrySpan {
   traceContext(): TraceContext | undefined;
 }
 
-const PATCH_MARKER = Symbol.for("@davidapps/telemetry-react-native.fetch");
+const PATCH_MARKER = Symbol.for("@davidilie/telemetry-react-native.fetch");
 
 function requestUrl(input: RequestInfo | URL): string {
   if (typeof input === "string") return input;

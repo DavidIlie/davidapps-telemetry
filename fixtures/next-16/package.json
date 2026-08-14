@@ -1,5 +1,5 @@
 {
-  "name": "@davidapps/telemetry-next-16-fixture",
+  "name": "@davidilie/telemetry-next-16-fixture",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -10,8 +10,8 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
-    "@davidapps/telemetry-next": "workspace:*",
-    "@davidapps/telemetry-web": "workspace:*",
+    "@davidilie/telemetry-next": "workspace:*",
+    "@davidilie/telemetry-web": "workspace:*",
     "next": "16.3.1",
     "react": "19.2.4",
     "react-dom": "19.2.4"

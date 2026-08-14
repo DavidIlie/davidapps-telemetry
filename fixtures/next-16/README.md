@@ -3,8 +3,8 @@
 This application proves that the browser and server entry points remain in
 separate module graphs:
 
-- `instrumentation-client.ts` imports only `@davidapps/telemetry-web`.
-- `instrumentation.ts` dynamically imports `@davidapps/telemetry-next/node`
+- `instrumentation-client.ts` imports only `@davidilie/telemetry-web`.
+- `instrumentation.ts` dynamically imports `@davidilie/telemetry-next/node`
   only when `NEXT_RUNTIME` is `nodejs`.
 
 Builds and tests are offline by default. To send a local deployment to a test

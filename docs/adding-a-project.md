@@ -6,13 +6,13 @@ before adding events; otherwise telemetry becomes an expensive pile of strings.
 
 ## 1. Choose runtime boundaries
 
-- Next.js: `@davidapps/telemetry-next` for the Node server and
-  `@davidapps/telemetry-web` in `instrumentation-client.ts`.
-- Standalone Node: `@davidapps/telemetry-node/register`.
-- A Node framework that already owns OTel: `@davidapps/telemetry-node` without
+- Next.js: `@davidilie/telemetry-next` for the Node server and
+  `@davidilie/telemetry-web` in `instrumentation-client.ts`.
+- Standalone Node: `@davidilie/telemetry-node/register`.
+- A Node framework that already owns OTel: `@davidilie/telemetry-node` without
   `/register`.
-- Vite/React/browser: `@davidapps/telemetry-web`.
-- Expo/React Native: `@davidapps/telemetry-react-native`.
+- Vite/React/browser: `@davidilie/telemetry-web`.
+- Expo/React Native: `@davidilie/telemetry-react-native`.
 - Another runtime: implement `TelemetryAdapter` around a maintained standard
   transport by following [custom-adapter.md](custom-adapter.md).
 

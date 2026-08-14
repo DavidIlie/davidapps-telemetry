@@ -13,12 +13,12 @@ import type {
   TelemetrySpanOptions,
   TelemetrySpanStatus,
   TraceContext,
-} from "@davidapps/telemetry-core";
+} from "@davidilie/telemetry-core";
 import {
   redactText,
   sanitizeAttributes,
   sanitizeSignal,
-} from "@davidapps/telemetry-core";
+} from "@davidilie/telemetry-core";
 import {
   toOtelAttributes,
   toStringAttributes,
@@ -154,7 +154,7 @@ export class FaroTelemetryAdapter implements TelemetryAdapter {
     if (!otel) return new NoopWebSpan();
 
     const span = otel.trace
-      .getTracer("@davidapps/telemetry-web")
+      .getTracer("@davidilie/telemetry-web")
       .startSpan(redactText(name, 256), {
         kind: spanKinds[options.kind ?? "internal"],
         attributes: toOtelAttributes(sanitizeAttributes(attributes)),

@@ -34,15 +34,15 @@ import type {
   TelemetrySpanOptions,
   TelemetrySpanStatus,
   TraceContext,
-} from "@davidapps/telemetry-core";
+} from "@davidilie/telemetry-core";
 import {
   redactText,
   sanitizeAttributes,
   sanitizeResource,
   sanitizeSignal,
-} from "@davidapps/telemetry-core";
+} from "@davidilie/telemetry-core";
 
-const PACKAGE_NAME = "@davidapps/telemetry-react-native";
+const PACKAGE_NAME = "@davidilie/telemetry-react-native";
 
 export interface MobileBatchConfig {
   maxQueueSize?: number;

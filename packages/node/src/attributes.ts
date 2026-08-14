@@ -2,7 +2,7 @@ import type {
   Attributes as DavidAppsAttributes,
   AttributeValue as DavidAppsAttributeValue,
   TelemetryResource,
-} from "@davidapps/telemetry-core";
+} from "@davidilie/telemetry-core";
 import type {
   Attributes as OtelAttributes,
   AttributeValue as OtelAttributeValue,

@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   resolve: {
     alias: {
-      "@davidapps/telemetry-core": fileURLToPath(
+      "@davidilie/telemetry-core": fileURLToPath(
         new URL("../core/src/index.ts", import.meta.url),
       ),
     },

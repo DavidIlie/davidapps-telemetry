@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { describe, expect, it, vi } from "vitest";
-import { createTelemetryClient, type TelemetryAdapter } from "@davidapps/telemetry-core";
+import { createTelemetryClient, type TelemetryAdapter } from "@davidilie/telemetry-core";
 import { installAppStateTelemetry, type AppStateLike } from "./lifecycle.js";
 
 describe("installAppStateTelemetry", () => {

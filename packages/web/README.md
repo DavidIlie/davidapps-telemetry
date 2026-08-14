@@ -1,4 +1,4 @@
-# `@davidapps/telemetry-web`
+# `@davidilie/telemetry-web`
 
 Browser telemetry for the DavidApps Grafana stack. It combines the shared core
 client with Grafana Faro's browser errors, Web Vitals, performance timings,
@@ -10,7 +10,7 @@ PostHog dependency.
 ## Install and initialize
 
 ```sh
-pnpm add @davidapps/telemetry-web
+pnpm add @davidilie/telemetry-web
 ```
 
 Initialize once from the earliest browser-only entry point so navigation and
@@ -18,7 +18,7 @@ performance instrumentation start early. The package is module-singleton and
 safe across React Strict Mode remounts.
 
 ```ts
-import { initializeWebTelemetry } from "@davidapps/telemetry-web";
+import { initializeWebTelemetry } from "@davidilie/telemetry-web";
 
 const deployedSha = import.meta.env.VITE_GIT_SHA;
 
@@ -154,7 +154,7 @@ global Faro instance also throws. Initialize this package first, or use
 
 ## React
 
-React is required only for the optional `@davidapps/telemetry-web/react`
+React is required only for the optional `@davidilie/telemetry-web/react`
 entrypoint.
 
 ```tsx
@@ -162,7 +162,7 @@ import {
   Telemetry,
   TelemetryErrorBoundary,
   reportReactError,
-} from "@davidapps/telemetry-web/react";
+} from "@davidilie/telemetry-web/react";
 
 <>
   <Telemetry config={config} onReady={({ client }) => setClient(client)} />

@@ -8,7 +8,7 @@ import {
   type TelemetryErrorHandler,
   type TelemetryResource,
   type TelemetrySpanOptions,
-} from "@davidapps/telemetry-core";
+} from "@davidilie/telemetry-core";
 import {
   OpenTelemetryAdapter,
   type OpenTelemetryAdapterConfig,

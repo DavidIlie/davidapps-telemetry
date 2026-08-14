@@ -4,7 +4,7 @@ import {
   AlwaysOnSampler,
   SamplingDecision,
 } from "@opentelemetry/sdk-trace-base";
-import type { TelemetrySignal } from "@davidapps/telemetry-core";
+import type { TelemetrySignal } from "@davidilie/telemetry-core";
 import { createNodeTelemetry } from "./client.js";
 import { OpenTelemetryAdapter } from "./adapter.js";
 import { DynamicTelemetrySampler } from "./sampler.js";

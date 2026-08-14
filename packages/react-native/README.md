@@ -1,4 +1,4 @@
-# `@davidapps/telemetry-react-native`
+# `@davidilie/telemetry-react-native`
 
 Pure-JavaScript OpenTelemetry tracing for React Native and Expo. It sends
 OTLP/HTTP traces through a self-hosted public ingest gateway and uses the shared
@@ -16,7 +16,7 @@ session replay, fingerprinting, or a durable offline queue.
 - Expo and `expo-constants` 57 or newer for the `/expo` helper
 
 ```sh
-pnpm add @davidapps/telemetry-react-native
+pnpm add @davidilie/telemetry-react-native
 ```
 
 The OpenTelemetry dependencies are pinned because its JavaScript SDK does not
@@ -31,8 +31,8 @@ import {
   TelemetryErrorBoundary,
   createScreenTracker,
   initReactNativeTelemetry,
-} from "@davidapps/telemetry-react-native";
-import { createExpoTelemetryResource } from "@davidapps/telemetry-react-native/expo";
+} from "@davidilie/telemetry-react-native";
+import { createExpoTelemetryResource } from "@davidilie/telemetry-react-native/expo";
 
 const deployedSha = process.env.EXPO_PUBLIC_GIT_SHA!;
 
@@ -91,7 +91,7 @@ Explicit values win. Otherwise it reads safe Expo constants and maps marketing
 version to `app.version`, bundle/package to `app.bundle.id`, build to
 `app.build`, and update/runtime/execution metadata to documented `app.*`/`expo.*`
 attributes. Expo is optional for the root adapter but required when importing
-`@davidapps/telemetry-react-native/expo`.
+`@davidilie/telemetry-react-native/expo`.
 
 `davidapps.project.id` belongs in the nested `attributes` object.
 

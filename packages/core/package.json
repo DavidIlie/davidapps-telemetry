@@ -1,5 +1,5 @@
 {
-  "name": "@davidapps/telemetry-core",
+  "name": "@davidilie/telemetry-core",
   "version": "0.1.1",
   "description": "Runtime-neutral telemetry client and adapter contracts.",
   "keywords": [

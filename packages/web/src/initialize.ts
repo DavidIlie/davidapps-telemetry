@@ -5,7 +5,7 @@ import {
   type TelemetryClient,
   type TelemetryErrorHandler,
   type TelemetryResource,
-} from "@davidapps/telemetry-core";
+} from "@davidilie/telemetry-core";
 import {
   getInternalFaroFromGlobalObject,
   getWebInstrumentations,

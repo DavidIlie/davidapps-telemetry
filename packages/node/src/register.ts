@@ -1,5 +1,5 @@
 import { resourceFromAttributes } from "@opentelemetry/resources";
-import { sanitizeResource } from "@davidapps/telemetry-core";
+import { sanitizeResource } from "@davidilie/telemetry-core";
 import {
   NodeSDK,
   type NodeSDKConfiguration,
@@ -15,7 +15,7 @@ import {
 import { telemetryResourceAttributes } from "./attributes.js";
 import { DynamicTelemetrySampler } from "./sampler.js";
 
-const REGISTRATION = Symbol.for("@davidapps/telemetry-node/registration");
+const REGISTRATION = Symbol.for("@davidilie/telemetry-node/registration");
 
 interface RegisteredNodeTelemetry {
   client: NodeTelemetryClient;

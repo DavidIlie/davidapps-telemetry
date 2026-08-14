@@ -38,10 +38,10 @@ importers:
 
   fixtures/expo-57:
     dependencies:
-      '@davidapps/telemetry-core':
+      '@davidilie/telemetry-core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@davidapps/telemetry-react-native':
+      '@davidilie/telemetry-react-native':
         specifier: workspace:*
         version: link:../../packages/react-native
       expo:
@@ -69,10 +69,10 @@ importers:
 
   fixtures/next-16:
     dependencies:
-      '@davidapps/telemetry-next':
+      '@davidilie/telemetry-next':
         specifier: workspace:*
         version: link:../../packages/next
-      '@davidapps/telemetry-web':
+      '@davidilie/telemetry-web':
         specifier: workspace:*
         version: link:../../packages/web
       next:
@@ -100,7 +100,7 @@ importers:
 
   fixtures/vite-react:
     dependencies:
-      '@davidapps/telemetry-web':
+      '@davidilie/telemetry-web':
         specifier: workspace:*
         version: link:../../packages/web
       react:
@@ -130,10 +130,10 @@ importers:
 
   packages/next:
     dependencies:
-      '@davidapps/telemetry-core':
+      '@davidilie/telemetry-core':
         specifier: workspace:*
         version: link:../core
-      '@davidapps/telemetry-node':
+      '@davidilie/telemetry-node':
         specifier: workspace:*
         version: link:../node
       '@opentelemetry/sdk-trace-base':
@@ -155,7 +155,7 @@ importers:
 
   packages/node:
     dependencies:
-      '@davidapps/telemetry-core':
+      '@davidilie/telemetry-core':
         specifier: workspace:*
         version: link:../core
       '@opentelemetry/api-logs':
@@ -177,7 +177,7 @@ importers:
 
   packages/react-native:
     dependencies:
-      '@davidapps/telemetry-core':
+      '@davidilie/telemetry-core':
         specifier: workspace:*
         version: link:../core
       '@opentelemetry/api':
@@ -217,7 +217,7 @@ importers:
 
   packages/web:
     dependencies:
-      '@davidapps/telemetry-core':
+      '@davidilie/telemetry-core':
         specifier: workspace:*
         version: link:../core
       '@grafana/faro-web-sdk':

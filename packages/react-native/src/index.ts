@@ -5,7 +5,7 @@ import {
   type BeforeSend,
   type TelemetryErrorHandler,
   type TelemetryResource,
-} from "@davidapps/telemetry-core";
+} from "@davidilie/telemetry-core";
 import {
   OtlpReactNativeAdapter,
   type MobileBatchConfig,

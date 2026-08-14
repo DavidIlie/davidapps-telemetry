@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Component, type ErrorInfo, type ReactNode } from "react";
-import type { Attributes, TelemetryClient } from "@davidapps/telemetry-core";
+import type { Attributes, TelemetryClient } from "@davidilie/telemetry-core";
 
 export interface TelemetryErrorBoundaryFallbackProps {
   error: Error;

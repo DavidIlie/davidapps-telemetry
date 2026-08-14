@@ -1,12 +1,12 @@
 import {
   sanitizeAttributes,
   sanitizeResource,
-} from "@davidapps/telemetry-core";
+} from "@davidilie/telemetry-core";
 import type {
   Attributes,
   AttributeValue,
   TelemetryResource,
-} from "@davidapps/telemetry-core";
+} from "@davidilie/telemetry-core";
 
 type OtelAttributeValue =
   | string

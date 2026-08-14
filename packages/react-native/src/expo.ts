@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import Constants from "expo-constants";
-import type { Attributes, TelemetryResource } from "@davidapps/telemetry-core";
+import type { Attributes, TelemetryResource } from "@davidilie/telemetry-core";
 
 type UnknownRecord = Record<string, unknown>;
 

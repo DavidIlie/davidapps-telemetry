@@ -4,8 +4,8 @@ import {
   TelemetryErrorBoundary,
   createScreenTracker,
   initReactNativeTelemetry,
-} from "@davidapps/telemetry-react-native";
-import { createExpoTelemetryResource } from "@davidapps/telemetry-react-native/expo";
+} from "@davidilie/telemetry-react-native";
+import { createExpoTelemetryResource } from "@davidilie/telemetry-react-native/expo";
 
 const endpoint = process.env.EXPO_PUBLIC_TELEMETRY_ENDPOINT ?? "http://localhost:4318";
 

@@ -2,7 +2,7 @@ import {
   isSensitiveAttributeKey,
   redactText,
   sanitizeUrl,
-} from "@davidapps/telemetry-core";
+} from "@davidilie/telemetry-core";
 import type {
   BeforeSendHook,
   TransportItem,

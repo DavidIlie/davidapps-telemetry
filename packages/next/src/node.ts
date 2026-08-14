@@ -1,17 +1,17 @@
 import { registerOTel, type Configuration } from "@vercel/otel";
-import { sanitizeResource } from "@davidapps/telemetry-core";
+import { sanitizeResource } from "@davidilie/telemetry-core";
 import {
   telemetryResourceAttributes,
   NodeTelemetryClient,
   DynamicTelemetrySampler,
   type NodeTelemetryConfig,
-} from "@davidapps/telemetry-node";
+} from "@davidilie/telemetry-node";
 import {
   ParentBasedSampler,
   TraceIdRatioBasedSampler,
   type Sampler,
 } from "@opentelemetry/sdk-trace-base";
-const REGISTRATION = Symbol.for("@davidapps/telemetry-next/registration");
+const REGISTRATION = Symbol.for("@davidilie/telemetry-next/registration");
 
 type GlobalWithRegistration = typeof globalThis & {
   [REGISTRATION]?: NodeTelemetryClient;
@@ -44,7 +44,7 @@ export function registerNextTelemetry(
     process.env.NEXT_RUNTIME !== "nodejs"
   ) {
     throw new Error(
-      "@davidapps/telemetry-next/node can only register in the Next.js Node runtime",
+      "@davidilie/telemetry-next/node can only register in the Next.js Node runtime",
     );
   }
 

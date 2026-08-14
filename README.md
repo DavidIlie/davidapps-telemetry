@@ -32,11 +32,11 @@ boundary when delivery of the in-memory batch matters.
 
 | Package | Use it for | Wire/backend shape |
 | --- | --- | --- |
-| [`@davidapps/telemetry-core`](packages/core) | Shared client, signal contracts, sanitization, consent, sampling, and custom adapters | No network I/O |
-| [`@davidapps/telemetry-web`](packages/web) | Browser errors, Web Vitals, performance, logs, events, and tracing | Faro `/collect`; browser traces are carried by Faro |
-| [`@davidapps/telemetry-node`](packages/node) | Node events, exceptions, logs, metrics, and active spans | OTLP through the registered OpenTelemetry provider; JSON stdout fallback for logs |
-| [`@davidapps/telemetry-next`](packages/next) | Next.js 16 server instrumentation and request-error reporting | `@vercel/otel` as the sole Node provider |
-| [`@davidapps/telemetry-react-native`](packages/react-native) | Expo/React Native JS errors, lifecycle, navigation, fetch, events, and spans | OTLP/HTTP traces through `/v1/traces` |
+| [`@davidilie/telemetry-core`](packages/core) | Shared client, signal contracts, sanitization, consent, sampling, and custom adapters | No network I/O |
+| [`@davidilie/telemetry-web`](packages/web) | Browser errors, Web Vitals, performance, logs, events, and tracing | Faro `/collect`; browser traces are carried by Faro |
+| [`@davidilie/telemetry-node`](packages/node) | Node events, exceptions, logs, metrics, and active spans | OTLP through the registered OpenTelemetry provider; JSON stdout fallback for logs |
+| [`@davidilie/telemetry-next`](packages/next) | Next.js 16 server instrumentation and request-error reporting | `@vercel/otel` as the sole Node provider |
+| [`@davidilie/telemetry-react-native`](packages/react-native) | Expo/React Native JS errors, lifecycle, navigation, fetch, events, and spans | OTLP/HTTP traces through `/v1/traces` |
 
 Install the runtime adapter; it brings in core. Depend on core directly only
 when implementing a new adapter or library integration.

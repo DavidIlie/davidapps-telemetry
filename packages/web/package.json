@@ -1,5 +1,5 @@
 {
-  "name": "@davidapps/telemetry-web",
+  "name": "@davidilie/telemetry-web",
   "version": "0.1.1",
   "description": "Small Grafana Faro browser adapter for DavidApps telemetry.",
   "keywords": [
@@ -71,7 +71,7 @@
     "clean": "rm -rf dist coverage"
   },
   "dependencies": {
-    "@davidapps/telemetry-core": "workspace:*",
+    "@davidilie/telemetry-core": "workspace:*",
     "@grafana/faro-web-sdk": "2.9.0",
     "@grafana/faro-web-tracing": "2.9.0",
     "@opentelemetry/api": "1.9.0"

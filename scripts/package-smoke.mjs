@@ -29,15 +29,15 @@ function run(command, arguments_, cwd) {
 }
 
 const runtimeSpecifiers = [
-  "@davidapps/telemetry-core",
-  "@davidapps/telemetry-web",
-  "@davidapps/telemetry-web/react",
-  "@davidapps/telemetry-node",
-  "@davidapps/telemetry-node/register",
-  "@davidapps/telemetry-next",
-  "@davidapps/telemetry-next/node",
-  "@davidapps/telemetry-react-native",
-  "@davidapps/telemetry-react-native/expo",
+  "@davidilie/telemetry-core",
+  "@davidilie/telemetry-web",
+  "@davidilie/telemetry-web/react",
+  "@davidilie/telemetry-node",
+  "@davidilie/telemetry-node/register",
+  "@davidilie/telemetry-next",
+  "@davidilie/telemetry-next/node",
+  "@davidilie/telemetry-react-native",
+  "@davidilie/telemetry-react-native/expo",
 ];
 
 async function createExpoConstantsStub(consumer) {

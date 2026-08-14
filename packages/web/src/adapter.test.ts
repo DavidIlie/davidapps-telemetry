@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Faro } from "@grafana/faro-web-sdk";
-import type { TelemetrySignal } from "@davidapps/telemetry-core";
+import type { TelemetrySignal } from "@davidilie/telemetry-core";
 import { FaroTelemetryAdapter } from "./adapter.js";
 
 function makeFaro() {

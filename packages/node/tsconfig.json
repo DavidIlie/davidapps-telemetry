@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "paths": {
-      "@davidapps/telemetry-core": ["../core/src/index.ts"]
+      "@davidilie/telemetry-core": ["../core/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts"]

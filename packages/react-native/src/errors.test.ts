@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createTelemetryClient, type TelemetryAdapter, type TelemetrySignal } from "@davidapps/telemetry-core";
+import { createTelemetryClient, type TelemetryAdapter, type TelemetrySignal } from "@davidilie/telemetry-core";
 import { installGlobalErrorHandlers } from "./errors.js";
 
 interface TestErrorGlobal {

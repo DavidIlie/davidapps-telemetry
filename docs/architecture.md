@@ -17,7 +17,7 @@ feature code
                                      traces                       logs              metrics
 ```
 
-`@davidapps/telemetry-core` owns the stable API and normalized signal contract.
+`@davidilie/telemetry-core` owns the stable API and normalized signal contract.
 It does not start an SDK, touch globals, or choose a transport. Runtime adapters
 translate that contract into maintained standard protocols:
 

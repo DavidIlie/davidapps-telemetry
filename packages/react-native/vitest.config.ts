@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 export default {
   resolve: {
     alias: {
-      "@davidapps/telemetry-core": fileURLToPath(
+      "@davidilie/telemetry-core": fileURLToPath(
         new URL("../core/src/index.ts", import.meta.url),
       ),
     },

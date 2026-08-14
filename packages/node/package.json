@@ -1,5 +1,5 @@
 {
-  "name": "@davidapps/telemetry-node",
+  "name": "@davidilie/telemetry-node",
   "version": "0.1.1",
   "description": "OpenTelemetry-backed telemetry for Node.js services.",
   "keywords": [
@@ -65,7 +65,7 @@
     "clean": "rm -rf dist coverage"
   },
   "dependencies": {
-    "@davidapps/telemetry-core": "workspace:*",
+    "@davidilie/telemetry-core": "workspace:*",
     "@opentelemetry/api-logs": "0.221.0",
     "@opentelemetry/resources": "2.10.0",
     "@opentelemetry/sdk-node": "0.221.0",

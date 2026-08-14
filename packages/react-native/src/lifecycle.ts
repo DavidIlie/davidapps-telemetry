@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Attributes, TelemetryClient } from "@davidapps/telemetry-core";
+import type { Attributes, TelemetryClient } from "@davidilie/telemetry-core";
 
 export interface AppStateSubscription {
   remove(): void;

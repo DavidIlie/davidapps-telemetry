@@ -1,4 +1,4 @@
-# `@davidapps/telemetry-core`
+# `@davidilie/telemetry-core`
 
 Runtime-neutral telemetry client, signal types, sanitization, consent,
 sampling, hooks, and adapter contracts. Core does not touch a global SDK or
@@ -6,7 +6,7 @@ perform network requests. Most applications should install a runtime adapter;
 use core directly to build an adapter or test an integration.
 
 ```sh
-pnpm add @davidapps/telemetry-core
+pnpm add @davidilie/telemetry-core
 ```
 
 ## Create a client
@@ -15,7 +15,7 @@ pnpm add @davidapps/telemetry-core
 import {
   createTelemetryClient,
   type TelemetryAdapter,
-} from "@davidapps/telemetry-core";
+} from "@davidilie/telemetry-core";
 
 const adapter: TelemetryAdapter = {
   send(signal) {

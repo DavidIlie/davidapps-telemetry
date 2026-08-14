@@ -1,17 +1,17 @@
-# `@davidapps/telemetry-next`
+# `@davidilie/telemetry-next`
 
 Next.js 16 server instrumentation backed by `@vercel/otel` and the shared
 DavidApps client. It has a strict runtime boundary:
 
-- `@davidapps/telemetry-next` is runtime-neutral and contains request-error
+- `@davidilie/telemetry-next` is runtime-neutral and contains request-error
   reporting types/helpers.
-- `@davidapps/telemetry-next/node` registers the Node provider and must be
+- `@davidilie/telemetry-next/node` registers the Node provider and must be
   dynamically imported only from the Node branch of `instrumentation.ts`.
 
 Node.js 20.9 or newer, Next.js 16, and OpenTelemetry API 1.x are supported.
 
 ```sh
-pnpm add @davidapps/telemetry-next @opentelemetry/api
+pnpm add @davidilie/telemetry-next @opentelemetry/api
 ```
 
 ## Server setup
@@ -22,7 +22,7 @@ import type { Instrumentation } from "next";
 import {
   createNextRequestErrorHandler,
   type NextRequestErrorHandler,
-} from "@davidapps/telemetry-next";
+} from "@davidilie/telemetry-next";
 
 let reportRequestError: NextRequestErrorHandler | undefined;
 
@@ -30,7 +30,7 @@ export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
   const { registerNextTelemetry } = await import(
-    "@davidapps/telemetry-next/node"
+    "@davidilie/telemetry-next/node"
   );
 
   const deployedSha = process.env.GIT_SHA!;
@@ -91,7 +91,7 @@ the default becomes OTel metrics. Set `measurementMode: "spans"`, `"metrics"`,
 or `"both"` explicitly when the representation must not depend on provider
 configuration; metric attributes require `metricAttributeAllowlist`.
 
-Do not import `@davidapps/telemetry-node/register` in a Next.js app. This
+Do not import `@davidilie/telemetry-node/register` in a Next.js app. This
 package deliberately makes `@vercel/otel` the only provider registration.
 
 ## Request errors
@@ -134,11 +134,11 @@ is Node-only; an Edge runtime needs an explicitly Edge-safe reporter.
 ## Browser setup
 
 Server instrumentation does not initialize browser telemetry. Use
-`@davidapps/telemetry-web` from `instrumentation-client.ts`:
+`@davidilie/telemetry-web` from `instrumentation-client.ts`:
 
 ```ts
 // instrumentation-client.ts
-import { initializeWebTelemetry } from "@davidapps/telemetry-web";
+import { initializeWebTelemetry } from "@davidilie/telemetry-web";
 
 const deployedSha = process.env.NEXT_PUBLIC_GIT_SHA!;
 
@@ -171,4 +171,4 @@ lifecycle. Do not call `shutdown()` during an ordinary request. Use `flush()`
 only at a real lifecycle boundary; it drains core sends, not every private
 batch inside `@vercel/otel`.
 
-See the [web adapter](https://www.npmjs.com/package/@davidapps/telemetry-web), [Node adapter](https://www.npmjs.com/package/@davidapps/telemetry-node), [project onboarding](https://github.com/DavidIlie/davidapps-telemetry/blob/main/docs/adding-a-project.md), and [troubleshooting](https://github.com/DavidIlie/davidapps-telemetry/blob/main/docs/troubleshooting.md).
+See the [web adapter](https://www.npmjs.com/package/@davidilie/telemetry-web), [Node adapter](https://www.npmjs.com/package/@davidilie/telemetry-node), [project onboarding](https://github.com/DavidIlie/davidapps-telemetry/blob/main/docs/adding-a-project.md), and [troubleshooting](https://github.com/DavidIlie/davidapps-telemetry/blob/main/docs/troubleshooting.md).

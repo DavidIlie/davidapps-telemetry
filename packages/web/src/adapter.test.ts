@@ -136,9 +136,11 @@ describe("FaroTelemetryAdapter", () => {
     });
     span.setAttribute("provider", "stripe");
     span.recordException(new Error("declined"), { retryable: false });
+    span.setStatus("ok");
     span.end();
 
     expect(startSpan).toHaveBeenCalledWith("checkout.create", {
+      kind: 0,
       attributes: { attempt: 2 },
     });
     expect(setAttribute).toHaveBeenCalledWith("provider", "stripe");
@@ -147,6 +149,7 @@ describe("FaroTelemetryAdapter", () => {
     expect(setStatus).toHaveBeenCalledWith(
       expect.objectContaining({ message: "declined" }),
     );
+    expect(setStatus).toHaveBeenLastCalledWith({ code: 1 });
     expect(end).toHaveBeenCalledOnce();
   });
 });

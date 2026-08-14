@@ -14,10 +14,9 @@
     "test": "vitest run",
     "lint": "tsc -p tsconfig.json",
     "clean": "rm -rf dist coverage",
-    "start": "node dist/server.js"
+    "start": "node dist/server.mjs"
   },
   "dependencies": {
     "fastify": "5.12.0"
   }
 }
-

@@ -1,7 +1,9 @@
 import {
   createTelemetryClient,
+  sanitizeResource,
   type BeforeSend,
   type TelemetryClient,
+  type TelemetryErrorHandler,
   type TelemetryResource,
 } from "@davidapps/telemetry-core";
 import {
@@ -16,11 +18,19 @@ import {
 } from "@grafana/faro-web-sdk";
 import { TracingInstrumentation } from "@grafana/faro-web-tracing";
 import { FaroTelemetryAdapter } from "./adapter.js";
-import { resourceAttributes, toOtelAttributes } from "./attributes.js";
+import { toOtelResourceAttributes } from "./attributes.js";
+import { createPrivacyBeforeSend } from "./privacy.js";
 
 type FaroOptions = Omit<
   BrowserConfig,
-  "app" | "beforeSend" | "instrumentations" | "url"
+  | "apiKey"
+  | "app"
+  | "beforeSend"
+  | "instrumentations"
+  | "metas"
+  | "preserveOriginalError"
+  | "trackGeolocation"
+  | "url"
 >;
 
 export interface WebTelemetryConfig extends FaroOptions {
@@ -32,6 +42,7 @@ export interface WebTelemetryConfig extends FaroOptions {
   sampleRate?: number;
   consent?: "granted" | "denied" | "pending";
   debug?: boolean;
+  onError?: TelemetryErrorHandler;
   beforeSend?: BeforeSend;
   beforeSendFaro?: BeforeSendHook;
   captureConsole?: boolean;
@@ -45,9 +56,31 @@ export interface WebTelemetryConfig extends FaroOptions {
 export interface WebTelemetry {
   client: TelemetryClient;
   faro: Faro;
+  /** Pause/unpause both custom and automatic Faro signals. */
+  setEnabled(enabled: boolean): void;
+  /** Pause Faro unless consent is explicitly granted. */
+  setConsent(consent: "granted" | "denied" | "pending"): void;
+  /** Pause collection and shut down the core client once. */
+  shutdown(): Promise<void>;
 }
 
 let activeTelemetry: WebTelemetry | undefined;
+let activeFingerprint: string | undefined;
+
+function fingerprint(config: WebTelemetryConfig): string {
+  return JSON.stringify({
+    url: config.url,
+    publicKey: config.publicKey,
+    isolate: config.isolate ?? false,
+    resource: config.resource,
+  });
+}
+
+function normalizeSampleRate(value: number | undefined): number | undefined {
+  if (value === undefined) return undefined;
+  if (!Number.isFinite(value)) return 1;
+  return Math.min(1, Math.max(0, value));
+}
 
 function makeApp(resource: TelemetryResource): BrowserConfig["app"] {
   return {
@@ -85,7 +118,7 @@ function makeInstrumentations(
   if (config.enableTracing !== false) {
     instrumentations.push(
       new TracingInstrumentation({
-        resourceAttributes: toOtelAttributes(resourceAttributes(config.resource)),
+        resourceAttributes: toOtelResourceAttributes(config.resource),
         ...(config.tracePropagationTargets
           ? {
               instrumentationOptions: {
@@ -106,7 +139,6 @@ function makeBrowserConfig(config: WebTelemetryConfig): BrowserConfig {
     additionalInstrumentations: _additionalInstrumentations,
     beforeSend: _beforeSend,
     beforeSendFaro,
-    apiKey,
     captureConsole: _captureConsole,
     consent,
     debug: _debug,
@@ -117,6 +149,7 @@ function makeBrowserConfig(config: WebTelemetryConfig): BrowserConfig {
     enableTracing: _enableTracing,
     resource,
     publicKey,
+    onError: _onError,
     sampleRate,
     tracePropagationTargets: _tracePropagationTargets,
     url,
@@ -124,60 +157,105 @@ function makeBrowserConfig(config: WebTelemetryConfig): BrowserConfig {
   } = config;
 
   const shouldSend = enabled !== false && (consent ?? "granted") === "granted";
+  const normalizedSampleRate = normalizeSampleRate(sampleRate);
   const sessionTracking = {
     ...faroOptions.sessionTracking,
-    ...(sampleRate === undefined ? {} : { samplingRate: sampleRate }),
+    ...(normalizedSampleRate === undefined
+      ? {}
+      : { samplingRate: normalizedSampleRate }),
   };
 
   return {
     ...faroOptions,
     url,
-    ...(publicKey ?? apiKey ? { apiKey: publicKey ?? apiKey } : {}),
+    ...(publicKey ? { apiKey: publicKey } : {}),
     app: makeApp(resource),
     instrumentations: makeInstrumentations(config),
     ignoreUrls: [...(faroOptions.ignoreUrls ?? []), url],
     paused: Boolean(faroOptions.paused) || !shouldSend,
     ...(Object.keys(sessionTracking).length > 0 ? { sessionTracking } : {}),
-    ...(beforeSendFaro ? { beforeSend: beforeSendFaro } : {}),
+    beforeSend: createPrivacyBeforeSend(beforeSendFaro),
   };
 }
 
 export function initializeWebTelemetry(
   config: WebTelemetryConfig,
 ): WebTelemetry {
-  if (activeTelemetry) return activeTelemetry;
+  const cleanConfig: WebTelemetryConfig = {
+    ...config,
+    resource: sanitizeResource(config.resource),
+  };
+  const requestedFingerprint = fingerprint(cleanConfig);
+  if (activeTelemetry) {
+    if (activeFingerprint !== requestedFingerprint) {
+      throw new Error(
+        "Web telemetry is already initialized with different routing or resource identity",
+      );
+    }
+    return activeTelemetry;
+  }
   if (typeof window === "undefined") {
     throw new Error(
       "initializeWebTelemetry() is browser-only. Call it from a client entry point or effect.",
     );
   }
 
-  const existingFaro = config.isolate
+  const existingFaro = cleanConfig.isolate
     ? undefined
     : getInternalFaroFromGlobalObject();
-  const faro = existingFaro ?? initializeFaro(makeBrowserConfig(config));
-
-  if (
-    existingFaro &&
-    config.enabled !== false &&
-    (config.consent ?? "granted") === "granted"
-  ) {
-    existingFaro.unpause();
+  if (existingFaro) {
+    throw new Error(
+      "A global Faro instance already exists. Initialize this package first or pass isolate: true so routing and privacy settings cannot be stale.",
+    );
   }
+  const faro = initializeFaro(makeBrowserConfig(cleanConfig));
 
   const client = createTelemetryClient({
     adapter: new FaroTelemetryAdapter(faro),
-    resource: config.resource,
-    ...(config.beforeSend ? { beforeSend: config.beforeSend } : {}),
-    ...(config.enabled === undefined ? {} : { enabled: config.enabled }),
-    ...(config.sampleRate === undefined || config.sessionTracking?.enabled !== false
+    resource: cleanConfig.resource,
+    ...(cleanConfig.beforeSend ? { beforeSend: cleanConfig.beforeSend } : {}),
+    ...(cleanConfig.enabled === undefined ? {} : { enabled: cleanConfig.enabled }),
+    ...(cleanConfig.sampleRate === undefined || cleanConfig.sessionTracking?.enabled !== false
       ? {}
-      : { sampleRate: config.sampleRate }),
-    ...(config.consent === undefined ? {} : { consent: config.consent }),
-    ...(config.debug === undefined ? {} : { debug: config.debug }),
+      : { sampleRate: cleanConfig.sampleRate }),
+    ...(cleanConfig.consent === undefined ? {} : { consent: cleanConfig.consent }),
+    ...(cleanConfig.debug === undefined ? {} : { debug: cleanConfig.debug }),
+    ...(cleanConfig.onError ? { onError: cleanConfig.onError } : {}),
   });
 
-  activeTelemetry = { client, faro };
+  let enabled = cleanConfig.enabled ?? true;
+  let consent = cleanConfig.consent ?? "granted";
+  let stopped = false;
+  const synchronizeFaro = () => {
+    if (!stopped && enabled && consent === "granted") faro.unpause();
+    else faro.pause();
+  };
+  const telemetry: WebTelemetry = {
+    client,
+    faro,
+    setEnabled(nextEnabled) {
+      enabled = nextEnabled;
+      client.setEnabled(nextEnabled);
+      synchronizeFaro();
+    },
+    setConsent(nextConsent) {
+      consent = nextConsent;
+      client.setConsent(nextConsent);
+      synchronizeFaro();
+    },
+    async shutdown() {
+      if (stopped) return;
+      stopped = true;
+      synchronizeFaro();
+      if (activeTelemetry === telemetry) {
+        activeTelemetry = undefined;
+        activeFingerprint = undefined;
+      }
+      await client.shutdown();
+    },
+  };
+  activeTelemetry = telemetry;
+  activeFingerprint = requestedFingerprint;
   return activeTelemetry;
 }
 
@@ -190,7 +268,5 @@ export function getWebTelemetryClient(): TelemetryClient | undefined {
 }
 
 export async function shutdownWebTelemetry(): Promise<void> {
-  const current = activeTelemetry;
-  activeTelemetry = undefined;
-  await current?.client.shutdown();
+  await activeTelemetry?.shutdown();
 }

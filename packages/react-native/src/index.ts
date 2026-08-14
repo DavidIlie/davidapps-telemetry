@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {
-  createTelemetryClient,
+  TelemetryClient,
   type BeforeSend,
-  type TelemetryClient,
+  type TelemetryErrorHandler,
   type TelemetryResource,
 } from "@davidapps/telemetry-core";
 import {
@@ -63,6 +63,7 @@ export interface ReactNativeTelemetryConfig {
   sampleRate?: number;
   beforeSend?: BeforeSend;
   debug?: boolean;
+  onError?: TelemetryErrorHandler;
   registerGlobal?: boolean;
   /** Enabled by default. Pass false to leave global fetch untouched. */
   fetch?: false | Omit<FetchInstrumentationOptions, "ingestEndpoint">;
@@ -83,6 +84,33 @@ export interface ReactNativeTelemetry {
   shutdown(): Promise<void>;
 }
 
+class ReactNativeTelemetryClient extends TelemetryClient {
+  constructor(
+    private readonly mobileAdapter: OtlpReactNativeAdapter,
+    config: ReactNativeTelemetryConfig,
+  ) {
+    super({
+      adapter: mobileAdapter,
+      resource: config.resource,
+      ...(config.enabled !== undefined ? { enabled: config.enabled } : {}),
+      ...(config.consent ? { consent: config.consent } : {}),
+      ...(config.beforeSend ? { beforeSend: config.beforeSend } : {}),
+      ...(config.debug !== undefined ? { debug: config.debug } : {}),
+      ...(config.onError ? { onError: config.onError } : {}),
+    });
+  }
+
+  override setEnabled(enabled: boolean): void {
+    super.setEnabled(enabled);
+    this.mobileAdapter.setEnabled(enabled);
+  }
+
+  override setConsent(consent: "granted" | "denied" | "pending"): void {
+    super.setConsent(consent);
+    this.mobileAdapter.setConsent(consent);
+  }
+}
+
 /**
  * Initializes a mobile OTLP trace pipeline and the small, reversible JS instrumentations.
  * Calling `shutdown` restores every global patched by this instance.
@@ -98,16 +126,11 @@ export function initReactNativeTelemetry(config: ReactNativeTelemetryConfig): Re
     ...(Object.keys(headers).length > 0 ? { headers } : {}),
     ...(config.batch ? { batch: config.batch } : {}),
     ...(config.sampleRate !== undefined ? { sampleRate: config.sampleRate } : {}),
-    ...(config.registerGlobal !== undefined ? { registerGlobal: config.registerGlobal } : {}),
-  });
-  const client = createTelemetryClient({
-    adapter,
-    resource: config.resource,
     ...(config.enabled !== undefined ? { enabled: config.enabled } : {}),
     ...(config.consent ? { consent: config.consent } : {}),
-    ...(config.beforeSend ? { beforeSend: config.beforeSend } : {}),
-    ...(config.debug !== undefined ? { debug: config.debug } : {}),
+    ...(config.registerGlobal !== undefined ? { registerGlobal: config.registerGlobal } : {}),
   });
+  const client = new ReactNativeTelemetryClient(adapter, config);
   const teardown: Array<() => void> = [];
 
   if (config.fetch !== false) {

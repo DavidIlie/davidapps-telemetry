@@ -42,7 +42,22 @@ function safeUrl(rawUrl: string): string {
 }
 
 function matches(rawUrl: string, matcher: UrlMatcher): boolean {
-  if (typeof matcher === "string") return rawUrl.startsWith(matcher);
+  if (typeof matcher === "string") {
+    try {
+      const candidate = new URL(rawUrl);
+      const allowed = new URL(matcher);
+      if (candidate.origin !== allowed.origin) return false;
+      const allowedPath = allowed.pathname.replace(/\/+$/, "");
+      return (
+        allowedPath === "" ||
+        candidate.pathname === allowedPath ||
+        candidate.pathname.startsWith(`${allowedPath}/`)
+      );
+    } catch {
+      // A malformed string allowlist entry must never broaden propagation.
+      return false;
+    }
+  }
   matcher.lastIndex = 0;
   return matcher.test(rawUrl);
 }
@@ -103,7 +118,7 @@ export function installFetchInstrumentation(
     const span = client.startSpan(`HTTP ${method}`, {
       "http.request.method": method,
       "url.full": safeUrl(rawUrl),
-    });
+    }, { kind: "client" });
     let requestInit = init;
 
     if (
@@ -119,6 +134,7 @@ export function installFetchInstrumentation(
       span.setAttribute("http.response.status_code", response.status);
       if (response.status >= 400) {
         span.setAttribute("error.type", String(response.status));
+        span.setStatus("error", `HTTP ${response.status}`);
       }
       return response;
     } catch (error) {

@@ -1,45 +1,111 @@
 # DavidApps Telemetry
 
-Tiny, opinionated telemetry SDKs for one very specific deployment shape: applications send browser, Node.js, Next.js, and React Native signals through Grafana Alloy into Tempo, VictoriaLogs, and Prometheus.
+Small, opinionated telemetry SDKs for a very specific deployment shape:
+browser, Node.js, Next.js, and React Native applications send standard Faro or
+OpenTelemetry signals through Grafana Alloy into Tempo, VictoriaLogs, and
+Prometheus.
 
-This is not a general analytics platform and it is not a PostHog replacement. It has no PostHog SDK, service, or storage dependency. It exists because the author already runs the Grafana observability stack at home and wanted a small PostHog-shaped client API instead of another data platform. If your infrastructure looks similar, have fun. If it does not, the adapters and interfaces may still be useful.
-
-The public API is intentionally small:
+This is not a general analytics platform and it is not a PostHog replacement.
+There is no PostHog SDK, service, or storage dependency. It exists because the
+author already runs this observability stack at home and wanted one tiny,
+PostHog-shaped capture API across his own applications. If your infrastructure
+looks similar, have fun. Otherwise, treat the core and adapters as an
+Apache-2.0 starting point.
 
 ```ts
-telemetry.capture("checkout.failed", { provider: "stripe" })
-telemetry.captureException(error)
-telemetry.log("warn", "provider degraded")
-telemetry.measure("checkout.duration", 413, { unit: "ms" })
-await telemetry.withSpan("checkout.create", operation)
+telemetry.capture("checkout.completed", { "checkout.provider": "stripe" });
+telemetry.captureException(error, { "checkout.stage": "payment" });
+telemetry.log("warn", "payment provider degraded", { provider: "stripe" });
+telemetry.measure("checkout.duration", 413, { provider: "stripe" }, "ms");
+
+await telemetry.withSpan(
+  "checkout.create",
+  () => createCheckout(),
+  { "checkout.provider": "stripe" },
+);
 ```
+
+Calls are fire-and-forget. Use `await telemetry.flush()` at a process or request
+boundary when delivery of the in-memory batch matters.
 
 ## Packages
 
-- [`@davidapps/telemetry-core`](packages/core): runtime-neutral client, contracts, processing, redaction, and transport interfaces.
-- [`@davidapps/telemetry-web`](packages/web): Grafana Faro browser adapter.
-- [`@davidapps/telemetry-node`](packages/node): OpenTelemetry Node.js adapter.
-- [`@davidapps/telemetry-next`](packages/next): Next.js instrumentation adapter built on the Node package and `@vercel/otel`.
-- [`@davidapps/telemetry-react-native`](packages/react-native): React Native and Expo adapter.
+| Package | Use it for | Wire/backend shape |
+| --- | --- | --- |
+| [`@davidapps/telemetry-core`](packages/core) | Shared client, signal contracts, sanitization, consent, sampling, and custom adapters | No network I/O |
+| [`@davidapps/telemetry-web`](packages/web) | Browser errors, Web Vitals, performance, logs, events, and tracing | Faro `/collect`; browser traces are carried by Faro |
+| [`@davidapps/telemetry-node`](packages/node) | Node events, exceptions, logs, metrics, and active spans | OTLP through the registered OpenTelemetry provider; JSON stdout fallback for logs |
+| [`@davidapps/telemetry-next`](packages/next) | Next.js 16 server instrumentation and request-error reporting | `@vercel/otel` as the sole Node provider |
+| [`@davidapps/telemetry-react-native`](packages/react-native) | Expo/React Native JS errors, lifecycle, navigation, fetch, events, and spans | OTLP/HTTP traces through `/v1/traces` |
 
-The repository also includes a small stateless ingest gateway and a Helm chart. The gateway validates and routes public browser/mobile traffic; Alloy remains responsible for batching and exporting data.
+Install the runtime adapter; it brings in core. Depend on core directly only
+when implementing a new adapter or library integration.
 
-Each package is independently installable. Start with the adapter for the runtime; it brings in the core package. Applications that implement their own adapter can depend on `@davidapps/telemetry-core` directly.
+## Identity contract
 
-See [the architecture](docs/architecture.md) and [project onboarding protocol](docs/adding-a-project.md). Agents working in this repository should follow [AGENTS.md](AGENTS.md).
+Every runtime uses the same resource shape. `serviceVersion` and `commitSha`
+must be the exact immutable SHA deployed in that build—not a branch, tag,
+container tag, package version, or the SDK's own version.
 
-## Status
+```ts
+const deployedSha = process.env.GIT_SHA!;
 
-Early development. Do not depend on API stability before `1.0.0`.
+const resource = {
+  serviceName: "storefront",
+  serviceVersion: deployedSha,
+  environment: "production",
+  namespace: "storefront",
+  repositoryUrl: "https://github.com/example/storefront",
+  commitSha: deployedSha,
+  attributes: {
+    "davidapps.project.id": "storefront",
+  },
+};
+```
 
-## Non-goals
+The nested `attributes` object is intentional. Passing
+`"davidapps.project.id"` beside `serviceName` is not part of the API and will
+not produce that resource attribute.
 
-- Feature flags or experiments
-- Session replay
-- DOM autocapture
-- User profiles, cohorts, or funnels
-- A telemetry storage backend
+## What the stack can answer
 
-## License
+- Page and screen performance, Web Vitals, startup time, and slow traces
+- Browser, React, Next.js request, Node, and React Native JS errors
+- Logs correlated to traces by `trace_id` and `span_id`
+- The exact source commit active during a trace or error
+- Stable product events, coarse funnels, and retention-like return activity
+- Gateway acceptance, rejection, rate-limit, and upstream health
 
-Apache-2.0. Adapted upstream files retain their original license and provenance in file headers and `THIRD_PARTY_NOTICES.md`.
+The last two are observability queries over Faro events, not a product
+warehouse. There is no identity graph, cohort engine, materialized funnel,
+session replay, feature flag service, or experiment engine.
+
+## Documentation
+
+- [Architecture and signal routing](docs/architecture.md)
+- [Add a project](docs/adding-a-project.md)
+- [Signal and attribute model](docs/signal-model.md)
+- [Analytics recipes](docs/analytics-recipes.md)
+- [Privacy and redaction](docs/privacy.md)
+- [Write a custom adapter](docs/custom-adapter.md)
+- [Compatibility and troubleshooting](docs/troubleshooting.md)
+- [Release procedure](docs/releasing.md)
+- [Gateway project registry](docs/project-registry.md)
+- [Repository agent protocol](AGENTS.md)
+
+## Deliberate limits
+
+- No session replay or native mobile crash reporter
+- No DOM autocapture
+- No feature flags or experiments
+- No user profiles, identity resolution, or data warehouse
+- No durable mobile offline queue
+- No storage in the public gateway
+
+## Status and license
+
+Early development. APIs may change before `1.0.0`.
+
+Apache-2.0. Published dependencies retain their own licenses. Upstream
+references and exact commits are recorded in `UPSTREAM.yml`; notices are in
+`THIRD_PARTY_NOTICES.md`.

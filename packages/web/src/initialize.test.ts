@@ -13,7 +13,9 @@ const faro = vi.hoisted(() => ({
   pause: vi.fn(),
   unpause: vi.fn(),
 }));
-const initializeFaro = vi.hoisted(() => vi.fn(() => faro));
+const initializeFaro = vi.hoisted(() =>
+  vi.fn<(config: { beforeSend?: BeforeSendHook }) => typeof faro>(() => faro),
+);
 const getInternalFaroFromGlobalObject = vi.hoisted(() => vi.fn(() => undefined));
 const getWebInstrumentations = vi.hoisted(() => vi.fn(() => [{ name: "web" }]));
 const tracingOptions = vi.hoisted(() => vi.fn());
@@ -50,7 +52,7 @@ describe("initializeWebTelemetry", () => {
   it("initializes Faro once with safe defaults and collector exclusion", async () => {
     const { initializeWebTelemetry } = await import("./initialize.js");
     const config = {
-      url: "https://telemetry.example.com/collect/app",
+      url: "https://telemetry.example.com/collect",
       publicKey: "public-storefront",
       resource: {
         serviceName: "storefront",
@@ -93,12 +95,12 @@ describe("initializeWebTelemetry", () => {
     );
   });
 
-  it("pauses automatic signals and installs the raw Faro before-send hook", async () => {
+  it("pauses automatic signals and wraps the Faro hook in the privacy pass", async () => {
     const { initializeWebTelemetry } = await import("./initialize.js");
     const beforeSendFaro = vi.fn<BeforeSendHook>((item) => item);
 
     initializeWebTelemetry({
-      url: "https://telemetry.example.com/collect/disabled",
+      url: "https://telemetry-disabled.example.com/collect",
       resource: { serviceName: "disabled-app" },
       enabled: false,
       beforeSendFaro,
@@ -111,10 +113,38 @@ describe("initializeWebTelemetry", () => {
     });
     expect(initializeFaro).toHaveBeenCalledWith(
       expect.objectContaining({
-        beforeSend: beforeSendFaro,
+        beforeSend: expect.any(Function),
         paused: true,
         instrumentations: [{ name: "web" }],
       }),
     );
+
+    const browserConfig = initializeFaro.mock.calls[0]?.[0];
+    const item = {
+      type: "log",
+      payload: { message: "hello" },
+      meta: { page: { url: "https://example.com/path?secret=yes#hash" } },
+    } as never;
+    browserConfig?.beforeSend?.(item);
+    expect(beforeSendFaro).toHaveBeenCalledWith(
+      expect.objectContaining({
+        meta: { page: { url: "https://example.com/path" } },
+      }),
+    );
+  });
+
+  it("keeps core and automatic Faro consent controls synchronized", async () => {
+    const { initializeWebTelemetry } = await import("./initialize.js");
+    const telemetry = initializeWebTelemetry({
+      url: "https://telemetry.example.com/collect",
+      resource: { serviceName: "storefront" },
+    });
+
+    telemetry.setConsent("denied");
+    expect(faro.pause).toHaveBeenCalledOnce();
+    telemetry.setConsent("granted");
+    expect(faro.unpause).toHaveBeenCalledOnce();
+    telemetry.setEnabled(false);
+    expect(faro.pause).toHaveBeenCalledTimes(2);
   });
 });

@@ -1,7 +1,24 @@
 name: Release
 
 on:
+  push:
+    tags:
+      - "v*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing v* tag to publish or repair
+        required: true
+        type: string
+
+# Publishing is immutable and partially ordered (core before adapters). Never let
+# two release or repair runs interleave, and never cancel after publishing starts.
+concurrency:
+  group: npm-release
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
 permissions:
   contents: read
@@ -13,27 +30,69 @@ jobs:
     environment: npm
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org
           package-manager-cache: false
+
+      # Trusted publishing requires a recent npm CLI. NPM_TOKEN remains a
+      # temporary bootstrap path until every package has an npm trusted publisher.
       - run: npm install --global npm@^11.5.1
       - run: corepack enable
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm check
-      - run: pnpm test
-      - run: pnpm build
-      - run: pnpm packages:check
-      - run: pnpm licenses:check
-      - name: Pack and publish with npm OIDC
+
+      - name: Resolve and verify release ref
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/npm-packages"
-          for package in core web node next react-native; do
-            tarball=$(pnpm --dir "packages/$package" pack \
-              --pack-destination "$RUNNER_TEMP/npm-packages" \
-              --json | jq -r .filename)
-            npm publish "$tarball" --access public
-          done
+          release_sha=$(git rev-parse HEAD)
+          if [[ "${{ github.event_name }}" == "push" && "$release_sha" != "$GITHUB_SHA" ]]; then
+            echo "Checked-out tag SHA $release_sha does not match event SHA $GITHUB_SHA" >&2
+            exit 1
+          fi
+          echo "RELEASE_SHA=$release_sha" >> "$GITHUB_ENV"
+
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/release-preflight.mjs --tag "$RELEASE_TAG" --sha "$RELEASE_SHA"
+      - run: pnpm release:verify
+
+      - name: Pack all npm packages
+        run: node scripts/pack-packages.mjs --output "$RUNNER_TEMP/npm-packages"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-packages-${{ env.RELEASE_TAG }}
+          path: ${{ runner.temp }}/npm-packages
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Configure npm authentication
+        shell: bash
+        env:
+          BOOTSTRAP_NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          npmrc="$RUNNER_TEMP/npm-release.npmrc"
+          printf 'registry=https://registry.npmjs.org/\n' > "$npmrc"
+          if [[ -n "${BOOTSTRAP_NPM_TOKEN:-}" ]]; then
+            printf '//registry.npmjs.org/:_authToken=%s\n' "$BOOTSTRAP_NPM_TOKEN" >> "$npmrc"
+            echo "Using the temporary npm token bootstrap path."
+          else
+            echo "No npm token configured; using npm trusted publishing (OIDC)."
+          fi
+          chmod 600 "$npmrc"
+          echo "NPM_CONFIG_USERCONFIG=$npmrc" >> "$GITHUB_ENV"
+
+      - name: Preflight registry and publish in dependency order
+        run: >-
+          node scripts/publish-packages.mjs
+          --manifest "$RUNNER_TEMP/npm-packages/manifest.json"
+          --registry https://registry.npmjs.org/
+
+      - name: Remove temporary npm authentication
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/npm-release.npmrc"

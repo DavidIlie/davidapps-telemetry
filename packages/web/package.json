@@ -1,7 +1,16 @@
 {
   "name": "@davidapps/telemetry-web",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Small Grafana Faro browser adapter for DavidApps telemetry.",
+  "keywords": [
+    "analytics",
+    "browser",
+    "faro",
+    "observability",
+    "opentelemetry",
+    "telemetry"
+  ],
+  "author": "David Ilie <david@davidilie.com> (https://davidilie.com)",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -9,7 +18,9 @@
     "directory": "packages/web"
   },
   "homepage": "https://github.com/DavidIlie/davidapps-telemetry#readme",
-  "bugs": { "url": "https://github.com/DavidIlie/davidapps-telemetry/issues" },
+  "bugs": {
+    "url": "https://github.com/DavidIlie/davidapps-telemetry/issues"
+  },
   "engines": {
     "node": ">=20"
   },
@@ -43,10 +54,14 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "UPSTREAM.yml"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/",
+    "provenance": true
   },
   "scripts": {
     "build": "tsdown src/index.ts src/react.tsx --format esm,cjs --dts",

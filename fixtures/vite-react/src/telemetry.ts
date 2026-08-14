@@ -2,6 +2,7 @@ import { initializeWebTelemetry } from "@davidapps/telemetry-web";
 
 const ingestUrl = import.meta.env.VITE_TELEMETRY_INGEST_URL;
 const enabled = import.meta.env.VITE_TELEMETRY_ENABLED === "true";
+const commitSha = import.meta.env.VITE_COMMIT_SHA;
 
 export const telemetry =
   enabled && ingestUrl
@@ -9,11 +10,14 @@ export const telemetry =
         url: ingestUrl,
         resource: {
           serviceName: "telemetry-vite-fixture",
-          serviceVersion: import.meta.env.VITE_APP_VERSION ?? "dev",
+          // Production uses the exact deployed Git revision. `dev` is only a
+          // local fixture fallback, never a marketing/application version.
+          serviceVersion: commitSha ?? "dev",
           environment: import.meta.env.MODE,
-          commitSha: import.meta.env.VITE_COMMIT_SHA,
-          repositoryUrl: "https://github.com/david/davidapps-telemetry",
+          commitSha,
+          repositoryUrl: "https://github.com/DavidIlie/davidapps-telemetry",
           platform: "web",
+          attributes: { "davidapps.project.id": "telemetry-fixture" },
         },
         tracePropagationTargets: [location.origin],
       }).client

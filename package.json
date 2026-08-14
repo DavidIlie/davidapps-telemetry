@@ -15,11 +15,17 @@
     "lint": "turbo run lint",
     "licenses:sync": "node scripts/sync-package-licenses.mjs",
     "licenses:check": "node scripts/check-licenses.mjs",
+    "upstream:check": "node scripts/check-upstream.mjs",
     "packages:check": "pnpm --recursive --filter './packages/**' exec publint",
+    "packages:pack": "node scripts/pack-packages.mjs",
+    "packages:smoke": "node scripts/package-smoke.mjs",
+    "release:version": "node scripts/set-release-version.mjs",
+    "release:preflight": "node scripts/release-preflight.mjs",
+    "release:verify": "pnpm check && pnpm test && pnpm build && pnpm packages:check && pnpm licenses:check && pnpm upstream:check && pnpm packages:smoke",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "turbo run build test check && changeset publish"
+    "release": "pnpm release:verify"
   },
   "devDependencies": {
     "@changesets/cli": "3.0.0",

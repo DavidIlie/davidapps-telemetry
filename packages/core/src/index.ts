@@ -1,5 +1,12 @@
 export { TelemetryClient, createTelemetryClient } from "./client.js";
-export { sanitizeAttributes, sanitizeSignal } from "./sanitize.js";
+export {
+  isSensitiveAttributeKey,
+  redactText,
+  sanitizeAttributes,
+  sanitizeResource,
+  sanitizeSignal,
+  sanitizeUrl,
+} from "./sanitize.js";
 export type {
   AttributePrimitive,
   Attributes,
@@ -12,9 +19,13 @@ export type {
   MeasurementSignal,
   TelemetryAdapter,
   TelemetryConfig,
+  TelemetryErrorContext,
+  TelemetryErrorHandler,
   TelemetryResource,
   TelemetrySignal,
   TelemetrySpan,
+  TelemetrySpanKind,
+  TelemetrySpanOptions,
+  TelemetrySpanStatus,
   TraceContext,
 } from "./types.js";
-

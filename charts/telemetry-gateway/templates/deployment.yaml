@@ -1,3 +1,13 @@
+{{- $runtimeProjects := list -}}
+{{- range $project := .Values.projects -}}
+{{- $runtimeProject := dict "id" $project.id "hosts" $project.hosts "allowedOrigins" $project.allowedOrigins -}}
+{{- range $key := list "publicKey" "ratePerSecond" "burst" "allowFaro" "allowTraces" "allowLogs" "allowMetrics" -}}
+{{- if hasKey $project $key -}}
+{{- $_ := set $runtimeProject $key (get $project $key) -}}
+{{- end -}}
+{{- end -}}
+{{- $runtimeProjects = append $runtimeProjects $runtimeProject -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -58,7 +68,9 @@ spec:
             - name: UPSTREAM_TIMEOUT_MS
               value: {{ .Values.gateway.upstreamTimeoutMs | quote }}
             - name: TELEMETRY_PROJECTS_JSON
-              value: {{ toJson .Values.projects | quote }}
+              # Ingress-only chart configuration is intentionally omitted;
+              # the runtime rejects unknown fields to catch policy typos.
+              value: {{ toJson $runtimeProjects | quote }}
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}

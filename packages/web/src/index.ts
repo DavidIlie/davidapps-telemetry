@@ -6,6 +6,10 @@ export {
   shutdownWebTelemetry,
 } from "./initialize.js";
 export type { WebTelemetry, WebTelemetryConfig } from "./initialize.js";
+export {
+  createPrivacyBeforeSend,
+  sanitizeFaroTransportItem,
+} from "./privacy.js";
 export type {
   BeforeSendHook as FaroBeforeSend,
   Faro,

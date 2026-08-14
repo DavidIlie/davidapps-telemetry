@@ -1,5 +1,10 @@
 {{- range $project := .Values.projects }}
 {{- $ingress := default dict $project.ingress }}
+{{- $allowFaro := eq (include "telemetry-gateway.routeEnabled" (dict "project" $project "key" "allowFaro" "default" true)) "true" }}
+{{- $allowTraces := eq (include "telemetry-gateway.routeEnabled" (dict "project" $project "key" "allowTraces" "default" true)) "true" }}
+{{- $allowLogs := eq (include "telemetry-gateway.routeEnabled" (dict "project" $project "key" "allowLogs" "default" false)) "true" }}
+{{- $allowMetrics := eq (include "telemetry-gateway.routeEnabled" (dict "project" $project "key" "allowMetrics" "default" false)) "true" }}
+{{- if or $allowFaro $allowTraces $allowLogs $allowMetrics }}
 {{- range $host := $project.hosts }}
 ---
 apiVersion: networking.k8s.io/v1
@@ -22,6 +27,7 @@ spec:
     - host: {{ $host | quote }}
       http:
         paths:
+          {{- if $allowFaro }}
           - path: /collect
             pathType: Exact
             backend:
@@ -29,7 +35,8 @@ spec:
                 name: {{ include "telemetry-gateway.name" $ }}
                 port:
                   name: http
-          {{- if $project.allowTraces }}
+          {{- end }}
+          {{- if $allowTraces }}
           - path: /v1/traces
             pathType: Exact
             backend:
@@ -38,8 +45,17 @@ spec:
                 port:
                   name: http
           {{- end }}
-          {{- if $project.allowLogs }}
+          {{- if $allowLogs }}
           - path: /v1/logs
+            pathType: Exact
+            backend:
+              service:
+                name: {{ include "telemetry-gateway.name" $ }}
+                port:
+                  name: http
+          {{- end }}
+          {{- if $allowMetrics }}
+          - path: /v1/metrics
             pathType: Exact
             backend:
               service:
@@ -52,5 +68,6 @@ spec:
     - hosts: [{{ $host | quote }}]
       secretName: {{ . | quote }}
   {{- end }}
+{{- end }}
 {{- end }}
 {{- end }}

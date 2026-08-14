@@ -1,4 +1,7 @@
-import { sanitizeAttributes } from "@davidapps/telemetry-core";
+import {
+  sanitizeAttributes,
+  sanitizeResource,
+} from "@davidapps/telemetry-core";
 import type {
   Attributes,
   AttributeValue,
@@ -46,22 +49,45 @@ export function toOtelAttributes(
 }
 
 export function resourceAttributes(resource: TelemetryResource): Attributes {
+  const clean = sanitizeResource(resource);
   return {
-    ...resource.attributes,
-    "service.name": resource.serviceName,
-    ...(resource.serviceVersion
-      ? { "service.version": resource.serviceVersion }
+    ...clean.attributes,
+    "service.name": clean.serviceName,
+    ...(clean.serviceVersion
+      ? { "service.version": clean.serviceVersion }
       : {}),
-    ...(resource.environment
-      ? { "deployment.environment.name": resource.environment }
+    ...(clean.environment
+      ? { "deployment.environment.name": clean.environment }
       : {}),
-    ...(resource.namespace ? { "service.namespace": resource.namespace } : {}),
-    ...(resource.repositoryUrl
-      ? { "vcs.repository.url.full": resource.repositoryUrl }
+    ...(clean.namespace ? { "service.namespace": clean.namespace } : {}),
+    ...(clean.repositoryUrl
+      ? { "vcs.repository.url.full": clean.repositoryUrl }
       : {}),
-    ...(resource.commitSha
-      ? { "vcs.ref.head.revision": resource.commitSha }
+    ...(clean.commitSha
+      ? { "vcs.ref.head.revision": clean.commitSha }
       : {}),
-    ...(resource.platform ? { "deployment.platform": resource.platform } : {}),
+    ...(clean.platform ? { "deployment.platform": clean.platform } : {}),
   };
+}
+
+/** Convert already-sanitized, trusted resource identity without dropping it. */
+export function toOtelResourceAttributes(
+  resource: TelemetryResource,
+): Record<string, OtelAttributeValue> {
+  return Object.fromEntries(
+    Object.entries(resourceAttributes(resource)).flatMap(([key, value]) =>
+      value == null ? [] : [[key, normalizeOtelAttribute(value)]],
+    ),
+  );
+}
+
+/** String form used by Faro event/log/measurement contexts. */
+export function toStringResourceAttributes(
+  resource: TelemetryResource,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(resourceAttributes(resource)).flatMap(([key, value]) =>
+      value == null ? [] : [[key, stringifyAttribute(value)]],
+    ),
+  );
 }

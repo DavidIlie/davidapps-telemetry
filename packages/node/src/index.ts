@@ -7,6 +7,7 @@ export {
   startSpan,
   withSpan,
   type OpenTelemetryAdapterConfig,
+  type MeasurementMode,
 } from "./adapter.js";
 export {
   NodeTelemetryClient,
@@ -18,3 +19,7 @@ export {
   toOtelAttributeValue,
   toOtelAttributes,
 } from "./attributes.js";
+export {
+  DynamicTelemetrySampler,
+  type TelemetrySamplingState,
+} from "./sampler.js";

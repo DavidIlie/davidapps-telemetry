@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "hosts", "allowedOrigins"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,62}$"
+          },
+          "hosts": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "allowedOrigins": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^https?://"
+            }
+          },
+          "publicKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "ratePerSecond": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "burst": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "allowFaro": { "type": "boolean" },
+          "allowTraces": { "type": "boolean" },
+          "allowLogs": { "type": "boolean" },
+          "allowMetrics": { "type": "boolean" },
+          "ingress": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "className": {
+                "type": "string",
+                "minLength": 1
+              },
+              "annotations": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": ["string", "number", "boolean"]
+                }
+              },
+              "tlsSecretName": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "gateway": {
+      "type": "object",
+      "properties": {
+        "maxBodyBytes": { "type": "integer", "minimum": 1 },
+        "upstreamTimeoutMs": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

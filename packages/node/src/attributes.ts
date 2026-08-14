@@ -51,6 +51,10 @@ export function telemetryResourceAttributes(
   resource: TelemetryResource,
 ): OtelAttributes {
   return {
+    // Additional attributes are deliberately applied first. The stable
+    // identity below always wins, even if an untrusted hook or caller tries to
+    // provide its own service/revision attributes.
+    ...toOtelAttributes(resource.attributes),
     "service.name": resource.serviceName,
     ...(resource.serviceVersion
       ? { "service.version": resource.serviceVersion }
@@ -70,7 +74,11 @@ export function telemetryResourceAttributes(
     ...(resource.commitSha
       ? { "vcs.ref.head.revision": resource.commitSha }
       : {}),
-    ...(resource.platform ? { "app.platform": resource.platform } : {}),
-    ...toOtelAttributes(resource.attributes),
+    ...(resource.platform
+      ? {
+          "app.platform": resource.platform,
+          "deployment.platform": resource.platform,
+        }
+      : {}),
   };
 }

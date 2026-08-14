@@ -1,5 +1,12 @@
 type Route = "faro" | "traces" | "logs" | "metrics";
 
+// Prometheus text labels escape exactly these three characters. This remains
+// necessary even though project IDs are validated: keeping the formatter safe
+// prevents future callers from turning labels into injected metric samples.
+function escapeLabel(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/"/g, '\\"');
+}
+
 export class GatewayMetrics {
   readonly #requests = new Map<string, number>();
 
@@ -14,14 +21,13 @@ export class GatewayMetrics {
       "# TYPE telemetry_gateway_requests_total counter",
     ];
 
-    for (const [key, count] of this.#requests) {
+    for (const [key, count] of [...this.#requests].sort(([left], [right]) => left.localeCompare(right))) {
       const [project, route, result] = key.split("\u0000");
       lines.push(
-        `telemetry_gateway_requests_total{project="${project}",route="${route}",result="${result}"} ${count}`,
+        `telemetry_gateway_requests_total{project="${escapeLabel(project ?? "")}",route="${escapeLabel(route ?? "")}",result="${escapeLabel(result ?? "")}"} ${count}`,
       );
     }
 
     return `${lines.join("\n")}\n`;
   }
 }
-

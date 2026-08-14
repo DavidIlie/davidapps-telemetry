@@ -8,6 +8,8 @@ import {
   trace,
   type Attributes as OtelAttributes,
   type AttributeValue as OtelAttributeValue,
+  type Context as OtelContext,
+  type Link,
   type Span,
 } from "@opentelemetry/api";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
@@ -15,7 +17,10 @@ import { resourceFromAttributes } from "@opentelemetry/resources";
 import {
   BatchSpanProcessor,
   ParentBasedSampler,
+  SamplingDecision,
   TraceIdRatioBasedSampler,
+  type Sampler,
+  type SamplingResult,
 } from "@opentelemetry/sdk-trace-base";
 import { StackContextManager, WebTracerProvider } from "@opentelemetry/sdk-trace-web";
 import type {
@@ -25,7 +30,16 @@ import type {
   TelemetryResource,
   TelemetrySignal,
   TelemetrySpan,
+  TelemetrySpanKind,
+  TelemetrySpanOptions,
+  TelemetrySpanStatus,
   TraceContext,
+} from "@davidapps/telemetry-core";
+import {
+  redactText,
+  sanitizeAttributes,
+  sanitizeResource,
+  sanitizeSignal,
 } from "@davidapps/telemetry-core";
 
 const PACKAGE_NAME = "@davidapps/telemetry-react-native";
@@ -44,6 +58,8 @@ export interface OtlpReactNativeAdapterConfig {
   headers?: Readonly<Record<string, string>>;
   batch?: MobileBatchConfig;
   sampleRate?: number;
+  enabled?: boolean;
+  consent?: "granted" | "denied" | "pending";
   /** Register this provider globally for interoperability with other OTel code. Disabled by default. */
   registerGlobal?: boolean;
 }
@@ -53,6 +69,7 @@ export interface TraceableTelemetrySpan extends TelemetrySpan {
 }
 
 function clampSampleRate(value: number | undefined): number {
+  if (!Number.isFinite(value)) return 1;
   return Math.min(1, Math.max(0, value ?? 1));
 }
 
@@ -60,10 +77,12 @@ function toOtelValue(value: AttributeValue): OtelAttributeValue {
   if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
     return value;
   }
-  const first = value[0];
-  if (typeof first === "number") return value.filter((entry): entry is number => typeof entry === "number");
-  if (typeof first === "boolean") return value.filter((entry): entry is boolean => typeof entry === "boolean");
-  return value.filter((entry): entry is string => typeof entry === "string");
+  if (value.every((entry): entry is string => typeof entry === "string")) return [...value];
+  if (value.every((entry): entry is number => typeof entry === "number")) return [...value];
+  if (value.every((entry): entry is boolean => typeof entry === "boolean")) return [...value];
+  // OTel requires homogeneous arrays; preserve mixed core values as strings
+  // instead of silently deleting entries based on the first value's type.
+  return value.map(String);
 }
 
 function toOtelAttributes(attributes: Attributes): OtelAttributes {
@@ -81,10 +100,81 @@ function resourceAttributes(resource: TelemetryResource) {
     ...(resource.serviceVersion ? { "service.version": resource.serviceVersion } : {}),
     ...(resource.environment ? { "deployment.environment.name": resource.environment } : {}),
     ...(resource.namespace ? { "service.namespace": resource.namespace } : {}),
-    ...(resource.repositoryUrl ? { "app.repository.url": resource.repositoryUrl } : {}),
+    ...(resource.repositoryUrl
+      ? {
+          "app.repository.url": resource.repositoryUrl,
+          "vcs.repository.url.full": resource.repositoryUrl,
+        }
+      : {}),
     ...(resource.commitSha ? { "vcs.ref.head.revision": resource.commitSha } : {}),
-    ...(resource.platform ? { "mobile.platform": resource.platform } : {}),
+    ...(resource.platform
+      ? {
+          "mobile.platform": resource.platform,
+          "deployment.platform": resource.platform,
+        }
+      : {}),
   });
+}
+
+const spanKinds: Record<TelemetrySpanKind, SpanKind> = {
+  internal: SpanKind.INTERNAL,
+  server: SpanKind.SERVER,
+  client: SpanKind.CLIENT,
+  producer: SpanKind.PRODUCER,
+  consumer: SpanKind.CONSUMER,
+};
+
+const spanStatuses: Record<TelemetrySpanStatus, SpanStatusCode> = {
+  unset: SpanStatusCode.UNSET,
+  ok: SpanStatusCode.OK,
+  error: SpanStatusCode.ERROR,
+};
+
+export class MobileCollectionSampler implements Sampler {
+  #enabled: boolean;
+  #consent: "granted" | "denied" | "pending";
+
+  constructor(
+    private readonly delegate: Sampler,
+    enabled: boolean,
+    consent: "granted" | "denied" | "pending",
+  ) {
+    this.#enabled = enabled;
+    this.#consent = consent;
+  }
+
+  setEnabled(enabled: boolean): void {
+    this.#enabled = enabled;
+  }
+
+  setConsent(consent: "granted" | "denied" | "pending"): void {
+    this.#consent = consent;
+  }
+
+  shouldSample(
+    parentContext: OtelContext,
+    traceId: string,
+    spanName: string,
+    spanKind: SpanKind,
+    attributes: OtelAttributes,
+    links: Link[],
+  ): SamplingResult {
+    if (!this.#enabled || this.#consent !== "granted") {
+      return { decision: SamplingDecision.NOT_RECORD };
+    }
+    return this.delegate.shouldSample(
+      parentContext,
+      traceId,
+      spanName,
+      spanKind,
+      attributes,
+      links,
+    );
+  }
+
+  toString(): string {
+    return `MobileCollectionSampler{${this.delegate.toString()}}`;
+  }
 }
 
 export function normalizeOtlpTracesEndpoint(endpoint: string): string {
@@ -92,10 +182,17 @@ export function normalizeOtlpTracesEndpoint(endpoint: string): string {
   if (!trimmed) throw new Error("A telemetry endpoint is required");
 
   const parsed = new URL(trimmed);
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error("Telemetry endpoint must use HTTP or HTTPS");
+  }
+  if (parsed.username || parsed.password) {
+    throw new Error("Telemetry endpoint must not contain credentials");
+  }
   const path = parsed.pathname.replace(/\/+$/, "");
   if (!path || path === "/") parsed.pathname = "/v1/traces";
   else if (!path.endsWith("/v1/traces")) parsed.pathname = `${path}/v1/traces`;
   else parsed.pathname = path;
+  parsed.search = "";
   parsed.hash = "";
   return parsed.toString();
 }
@@ -127,15 +224,31 @@ class OtlpTelemetrySpan implements TraceableTelemetrySpan {
   constructor(private readonly span: Span) {}
 
   setAttribute(name: string, value: AttributeValue): this {
-    this.span.setAttribute(name, toOtelValue(value));
+    const safe = sanitizeAttributes({ [name]: value });
+    if (safe[name] !== undefined) this.span.setAttribute(name, toOtelValue(safe[name]));
     return this;
   }
 
   recordException(error: unknown, attributes: Attributes = {}): void {
-    if (error instanceof Error) this.span.recordException(error);
-    else this.span.recordException(String(error));
-    this.span.setAttributes(toOtelAttributes(attributes));
+    const original = error instanceof Error ? error : new Error(String(error));
+    const safe = new Error(redactText(original.message), {
+      ...(original.cause !== undefined
+        ? { cause: redactText(String(original.cause)) }
+        : {}),
+    });
+    safe.name = redactText(original.name, 256);
+    if (original.stack) safe.stack = redactText(original.stack, 16_384);
+    this.span.recordException(safe);
+    this.span.setAttributes(toOtelAttributes(sanitizeAttributes(attributes)));
     this.span.setStatus({ code: SpanStatusCode.ERROR });
+  }
+
+  setStatus(status: TelemetrySpanStatus, message?: string): this {
+    this.span.setStatus({
+      code: spanStatuses[status],
+      ...(message ? { message: redactText(message) } : {}),
+    });
+    return this;
   }
 
   traceContext(): TraceContext | undefined {
@@ -153,6 +266,9 @@ class NoopTelemetrySpan implements TraceableTelemetrySpan {
   }
 
   recordException(): void {}
+  setStatus(): this {
+    return this;
+  }
   traceContext(): undefined {
     return undefined;
   }
@@ -163,10 +279,12 @@ export class OtlpReactNativeAdapter implements TelemetryAdapter {
   readonly endpoint: string;
   readonly #provider: WebTracerProvider;
   readonly #tracer;
+  readonly #sampler: MobileCollectionSampler;
   #shutdown = false;
 
   constructor(config: OtlpReactNativeAdapterConfig) {
     this.endpoint = normalizeOtlpTracesEndpoint(config.endpoint);
+    const cleanResource = sanitizeResource(config.resource);
     const sampleRate = clampSampleRate(config.sampleRate);
     const exporter = new OTLPTraceExporter({
       url: this.endpoint,
@@ -178,9 +296,14 @@ export class OtlpReactNativeAdapter implements TelemetryAdapter {
       Math.max(1, config.batch?.maxExportBatchSize ?? 64),
     );
 
+    this.#sampler = new MobileCollectionSampler(
+      new ParentBasedSampler({ root: new TraceIdRatioBasedSampler(sampleRate) }),
+      config.enabled ?? true,
+      config.consent ?? "granted",
+    );
     this.#provider = new WebTracerProvider({
-      resource: resourceFromAttributes(resourceAttributes(config.resource)),
-      sampler: new ParentBasedSampler({ root: new TraceIdRatioBasedSampler(sampleRate) }),
+      resource: resourceFromAttributes(resourceAttributes(cleanResource)),
+      sampler: this.#sampler,
       spanProcessors: [
         new BatchSpanProcessor(exporter, {
           maxQueueSize,
@@ -199,6 +322,7 @@ export class OtlpReactNativeAdapter implements TelemetryAdapter {
 
   send(signal: TelemetrySignal): void {
     if (this.#shutdown) return;
+    signal = sanitizeSignal(signal);
     const startTime = new Date(signal.timestamp);
     const span = this.#tracer.startSpan(
       signalName(signal),
@@ -243,11 +367,15 @@ export class OtlpReactNativeAdapter implements TelemetryAdapter {
     span.end(startTime);
   }
 
-  startSpan(name: string, attributes: Attributes = {}): TraceableTelemetrySpan {
+  startSpan(
+    name: string,
+    attributes: Attributes = {},
+    options: TelemetrySpanOptions = {},
+  ): TraceableTelemetrySpan {
     if (this.#shutdown) return new NoopTelemetrySpan();
-    const span = this.#tracer.startSpan(name, {
-      kind: SpanKind.INTERNAL,
-      attributes: toOtelAttributes(attributes),
+    const span = this.#tracer.startSpan(redactText(name, 256), {
+      kind: spanKinds[options.kind ?? "internal"],
+      attributes: toOtelAttributes(sanitizeAttributes(attributes)),
     });
     return new OtlpTelemetrySpan(span);
   }
@@ -255,6 +383,14 @@ export class OtlpReactNativeAdapter implements TelemetryAdapter {
   currentTraceContext(): TraceContext | undefined {
     const span = trace.getSpan(context.active());
     return span ? spanContext(span) : undefined;
+  }
+
+  setEnabled(enabled: boolean): void {
+    this.#sampler.setEnabled(enabled);
+  }
+
+  setConsent(consent: "granted" | "denied" | "pending"): void {
+    this.#sampler.setConsent(consent);
   }
 
   async flush(): Promise<void> {

@@ -20,6 +20,12 @@ class TestSpan implements TelemetrySpan {
 
   recordException(): void {}
 
+  setStatus(status: "unset" | "ok" | "error", message?: string): this {
+    this.attributes["otel.status"] = status;
+    if (message) this.attributes["otel.status_message"] = message;
+    return this;
+  }
+
   traceContext() {
     return {
       traceId: "0123456789abcdef0123456789abcdef",
@@ -99,5 +105,40 @@ describe("installFetchInstrumentation", () => {
     expect(headers.get("traceparent")).toBe(
       "00-0123456789abcdef0123456789abcdef-0123456789abcdef-01",
     );
+  });
+
+  it("does not propagate to a lookalike origin and marks HTTP failures", async () => {
+    const spans: TestSpan[] = [];
+    const adapter: TelemetryAdapter = {
+      send() {},
+      startSpan() {
+        const span = new TestSpan();
+        spans.push(span);
+        return span;
+      },
+    };
+    const client = createTelemetryClient({
+      adapter,
+      resource: { serviceName: "fixture" },
+    });
+    const calls: RequestInit[] = [];
+    globalThis.fetch = vi.fn(async (_input, init) => {
+      calls.push(init ?? {});
+      return new Response(null, { status: 503 });
+    }) as typeof fetch;
+
+    const restore = installFetchInstrumentation(client, {
+      ingestEndpoint: "https://ingest.example/v1/traces",
+      propagateTraceHeadersTo: ["https://api.example/v1"],
+    });
+    await fetch("https://api.example.evil/v1/orders");
+    restore();
+
+    expect(new Headers(calls[0]?.headers).has("traceparent")).toBe(false);
+    expect(spans[0]?.attributes).toMatchObject({
+      "error.type": "503",
+      "otel.status": "error",
+      "otel.status_message": "HTTP 503",
+    });
   });
 });

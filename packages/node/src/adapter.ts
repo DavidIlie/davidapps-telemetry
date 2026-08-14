@@ -15,15 +15,22 @@ import type {
   TelemetryResource,
   TelemetrySignal,
   TelemetrySpan,
+  TelemetrySpanKind,
+  TelemetrySpanOptions,
+  TelemetrySpanStatus,
   TraceContext,
+} from "@davidapps/telemetry-core";
+import {
+  redactText,
+  sanitizeAttributes,
+  sanitizeResource,
+  sanitizeSignal,
 } from "@davidapps/telemetry-core";
 import {
   telemetryResourceAttributes,
   toOtelAttributes,
   toOtelAttributeValue,
 } from "./attributes.js";
-
-const INSTRUMENTATION_VERSION = "0.1.0";
 
 const severityNumbers = {
   debug: SeverityNumber.DEBUG,
@@ -33,18 +40,45 @@ const severityNumbers = {
 } as const;
 
 function exceptionForOtel(error: unknown): Error | string {
-  if (error instanceof Error) return error;
-  return typeof error === "string" ? error : String(error);
+  if (error instanceof Error) {
+    const safe = new Error(redactText(error.message), {
+      ...(error.cause !== undefined
+        ? { cause: redactText(String(error.cause)) }
+        : {}),
+    });
+    safe.name = redactText(error.name, 256);
+    if (error.stack) safe.stack = redactText(error.stack, 16_384);
+    return safe;
+  }
+  return redactText(typeof error === "string" ? error : String(error));
 }
 
 function signalAttributes(signal: TelemetrySignal) {
   return {
-    ...telemetryResourceAttributes(signal.resource),
     ...toOtelAttributes(signal.attributes),
+    ...telemetryResourceAttributes(signal.resource),
     "telemetry.signal.id": signal.id,
     "telemetry.signal.type": signal.type,
   };
 }
+
+const spanKinds: Record<TelemetrySpanKind, SpanKind> = {
+  internal: SpanKind.INTERNAL,
+  server: SpanKind.SERVER,
+  client: SpanKind.CLIENT,
+  producer: SpanKind.PRODUCER,
+  consumer: SpanKind.CONSUMER,
+};
+
+const spanStatuses: Record<TelemetrySpanStatus, SpanStatusCode> = {
+  unset: SpanStatusCode.UNSET,
+  ok: SpanStatusCode.OK,
+  error: SpanStatusCode.ERROR,
+};
+
+const VALID_INSTRUMENT_NAME = /^[A-Za-z][A-Za-z0-9_.\-/]{0,254}$/;
+
+export type MeasurementMode = "metrics" | "spans" | "both";
 
 export class OpenTelemetrySpan implements TelemetrySpan {
   readonly #span: Span;
@@ -54,14 +88,25 @@ export class OpenTelemetrySpan implements TelemetrySpan {
   }
 
   setAttribute(name: string, value: AttributeValue): this {
-    this.#span.setAttribute(name, toOtelAttributeValue(value));
+    const safe = sanitizeAttributes({ [name]: value });
+    if (safe[name] !== undefined) {
+      this.#span.setAttribute(name, toOtelAttributeValue(safe[name]));
+    }
     return this;
   }
 
   recordException(error: unknown, attributes: Attributes = {}): void {
-    this.#span.setAttributes(toOtelAttributes(attributes));
+    this.#span.setAttributes(toOtelAttributes(sanitizeAttributes(attributes)));
     this.#span.recordException(exceptionForOtel(error));
     this.#span.setStatus({ code: SpanStatusCode.ERROR });
+  }
+
+  setStatus(status: TelemetrySpanStatus, message?: string): this {
+    this.#span.setStatus({
+      code: spanStatuses[status],
+      ...(message ? { message: redactText(message) } : {}),
+    });
+    return this;
   }
 
   end(): void {
@@ -74,28 +119,55 @@ export interface OpenTelemetryAdapterConfig {
   instrumentationName?: string;
   instrumentationVersion?: string;
   structuredConsole?: boolean;
+  /** How `measure()` is represented. Defaults to trace spans. */
+  measurementMode?: MeasurementMode;
+  /** Explicit low-cardinality signal attributes allowed onto metric points. */
+  metricAttributeAllowlist?: readonly string[];
+  /** Bound on distinct histogram name/unit pairs. Defaults to 64. */
+  maxMetricInstruments?: number;
+  /** Internal: provider-managed trace sampling still needs a log decision. */
+  logSampleRate?: number;
   shutdown?: () => void | Promise<void>;
 }
 
 export class OpenTelemetryAdapter implements TelemetryAdapter {
   readonly #instrumentationName: string;
-  readonly #instrumentationVersion: string;
+  readonly #instrumentationVersion: string | undefined;
   readonly #resource: TelemetryResource;
   readonly #structuredConsole: boolean;
+  readonly #measurementMode: MeasurementMode;
+  readonly #metricAttributeAllowlist: ReadonlySet<string>;
+  readonly #maxMetricInstruments: number;
+  readonly #logSampleRate: number;
   readonly #shutdown: (() => void | Promise<void>) | undefined;
   readonly #histograms = new Map<string, Histogram>();
 
   constructor(config: OpenTelemetryAdapterConfig) {
-    this.#resource = config.resource;
+    this.#resource = sanitizeResource(config.resource);
     this.#instrumentationName =
-      config.instrumentationName ?? config.resource.serviceName;
-    this.#instrumentationVersion =
-      config.instrumentationVersion ?? INSTRUMENTATION_VERSION;
+      config.instrumentationName ?? this.#resource.serviceName;
+    this.#instrumentationVersion = config.instrumentationVersion;
     this.#structuredConsole = config.structuredConsole ?? true;
+    this.#measurementMode = config.measurementMode ?? "spans";
+    this.#metricAttributeAllowlist = new Set(
+      config.metricAttributeAllowlist ?? [],
+    );
+    this.#maxMetricInstruments = Math.max(
+      0,
+      Math.floor(
+        Number.isFinite(config.maxMetricInstruments)
+          ? (config.maxMetricInstruments ?? 64)
+          : 64,
+      ),
+    );
+    this.#logSampleRate = Number.isFinite(config.logSampleRate)
+      ? Math.min(1, Math.max(0, config.logSampleRate ?? 1))
+      : 1;
     this.#shutdown = config.shutdown;
   }
 
   send(signal: TelemetrySignal): void {
+    signal = sanitizeSignal(signal);
     const attributes = signalAttributes(signal);
 
     switch (signal.type) {
@@ -112,7 +184,7 @@ export class OpenTelemetryAdapter implements TelemetryAdapter {
           startTime: new Date(signal.timestamp),
         });
         span.addEvent(signal.name, attributes, new Date(signal.timestamp));
-        span.end();
+        span.end(new Date(signal.timestamp));
         return;
       }
 
@@ -136,11 +208,12 @@ export class OpenTelemetryAdapter implements TelemetryAdapter {
           code: SpanStatusCode.ERROR,
           message: signal.exception.message,
         });
-        if (!activeSpan) span.end();
+        if (!activeSpan) span.end(new Date(signal.timestamp));
         return;
       }
 
       case "log": {
+        if (Math.random() >= this.#logSampleRate) return;
         logs
           .getLogger(this.#instrumentationName, this.#instrumentationVersion)
           .emit({
@@ -175,10 +248,32 @@ export class OpenTelemetryAdapter implements TelemetryAdapter {
       }
 
       case "measurement": {
+        if (
+          this.#measurementMode === "spans" ||
+          this.#measurementMode === "both"
+        ) {
+          const span = this.#tracer().startSpan(`measurement:${signal.name}`, {
+            kind: SpanKind.INTERNAL,
+            attributes: {
+              ...attributes,
+              "telemetry.measurement.value": signal.value,
+              ...(signal.unit
+                ? { "telemetry.measurement.unit": signal.unit }
+                : {}),
+            },
+            startTime: new Date(signal.timestamp),
+          });
+          span.end(new Date(signal.timestamp));
+        }
+
+        if (this.#measurementMode === "spans") return;
+        if (!VALID_INSTRUMENT_NAME.test(signal.name)) return;
+
         const key = `${signal.name}\u0000${signal.unit ?? ""}`;
         let histogram = this.#histograms.get(key);
 
         if (!histogram) {
+          if (this.#histograms.size >= this.#maxMetricInstruments) return;
           histogram = metrics
             .getMeter(this.#instrumentationName, this.#instrumentationVersion)
             .createHistogram(signal.name, {
@@ -187,16 +282,29 @@ export class OpenTelemetryAdapter implements TelemetryAdapter {
           this.#histograms.set(key, histogram);
         }
 
-        histogram.record(signal.value, attributes);
+        // Resource attributes are exported by the MeterProvider. Never copy
+        // signal IDs, revisions, or arbitrary event attributes onto points:
+        // each unique label set creates a Prometheus/VictoriaMetrics series.
+        const metricAttributes = Object.fromEntries(
+          Object.entries(signal.attributes).filter(([name]) =>
+            this.#metricAttributeAllowlist.has(name),
+          ),
+        );
+        histogram.record(signal.value, toOtelAttributes(metricAttributes));
       }
     }
   }
 
-  startSpan(name: string, attributes: Attributes = {}): TelemetrySpan {
-    const span = this.#tracer().startSpan(name, {
+  startSpan(
+    name: string,
+    attributes: Attributes = {},
+    options: TelemetrySpanOptions = {},
+  ): TelemetrySpan {
+    const span = this.#tracer().startSpan(redactText(name, 256), {
+      kind: spanKinds[options.kind ?? "internal"],
       attributes: {
+        ...toOtelAttributes(sanitizeAttributes(attributes)),
         ...telemetryResourceAttributes(this.#resource),
-        ...toOtelAttributes(attributes),
       },
     });
     return new OpenTelemetrySpan(span);
@@ -210,30 +318,61 @@ export class OpenTelemetryAdapter implements TelemetryAdapter {
     name: string,
     operation: () => T | Promise<T>,
     attributes: Attributes = {},
+    options: TelemetrySpanOptions = {},
   ): Promise<T> {
-    return this.#tracer().startActiveSpan(
-      name,
-      {
-        attributes: {
-          ...telemetryResourceAttributes(this.#resource),
-          ...toOtelAttributes(attributes),
+    let operationRan = false;
+    let operationSucceeded = false;
+    let operationResult: T | undefined;
+    let operationError: unknown;
+
+    try {
+      await this.#tracer().startActiveSpan(
+        redactText(name, 256),
+        {
+          kind: spanKinds[options.kind ?? "internal"],
+          attributes: {
+            ...toOtelAttributes(sanitizeAttributes(attributes)),
+            ...telemetryResourceAttributes(this.#resource),
+          },
         },
-      },
-      async (span) => {
-        try {
-          return await operation();
-        } catch (error) {
-          span.recordException(exceptionForOtel(error));
-          span.setStatus({
-            code: SpanStatusCode.ERROR,
-            ...(error instanceof Error ? { message: error.message } : {}),
-          });
-          throw error;
-        } finally {
-          span.end();
-        }
-      },
-    );
+        async (span) => {
+          operationRan = true;
+          try {
+            operationResult = await operation();
+            operationSucceeded = true;
+          } catch (error) {
+            operationError = error;
+            try {
+              span.recordException(exceptionForOtel(error));
+              span.setStatus({
+                code: SpanStatusCode.ERROR,
+                ...(error instanceof Error
+                  ? { message: redactText(error.message) }
+                  : {}),
+              });
+            } catch {
+              // Telemetry must not replace the original application error.
+            }
+          } finally {
+            try {
+              span.end();
+            } catch {
+              // Ending telemetry is best effort and must not change app flow.
+            }
+          }
+        },
+      );
+    } catch (telemetryError) {
+      if (!operationRan) throw telemetryError;
+      // A provider failure after the callback must not replace either the
+      // application's result or its original error.
+    }
+
+    if (operationSucceeded) return operationResult as T;
+    if (operationRan) throw operationError;
+    // Defensive fallback for a non-conforming tracer that returns without
+    // invoking its callback.
+    return operation();
   }
 
   async shutdown(): Promise<void> {
@@ -268,10 +407,12 @@ export function currentTraceContext(): TraceContext | undefined {
 export function startSpan(
   name: string,
   attributes: Attributes = {},
+  options: TelemetrySpanOptions = {},
 ): TelemetrySpan {
   return new OpenTelemetrySpan(
-    trace.getTracer("@davidapps/telemetry-node").startSpan(name, {
-      attributes: toOtelAttributes(attributes),
+    trace.getTracer("@davidapps/telemetry-node").startSpan(redactText(name, 256), {
+      kind: spanKinds[options.kind ?? "internal"],
+      attributes: toOtelAttributes(sanitizeAttributes(attributes)),
     }),
   );
 }
@@ -280,24 +421,38 @@ export async function withSpan<T>(
   name: string,
   operation: () => T | Promise<T>,
   attributes: Attributes = {},
+  options: TelemetrySpanOptions = {},
 ): Promise<T> {
   return trace
     .getTracer("@davidapps/telemetry-node")
     .startActiveSpan(
-      name,
-      { attributes: toOtelAttributes(attributes) },
+      redactText(name, 256),
+      {
+        kind: spanKinds[options.kind ?? "internal"],
+        attributes: toOtelAttributes(sanitizeAttributes(attributes)),
+      },
       async (span) => {
         try {
           return await operation();
         } catch (error) {
-          span.recordException(exceptionForOtel(error));
-          span.setStatus({
-            code: SpanStatusCode.ERROR,
-            ...(error instanceof Error ? { message: error.message } : {}),
-          });
+          try {
+            span.recordException(exceptionForOtel(error));
+            span.setStatus({
+              code: SpanStatusCode.ERROR,
+              ...(error instanceof Error
+                ? { message: redactText(error.message) }
+                : {}),
+            });
+          } catch {
+            // Preserve the original application error.
+          }
           throw error;
         } finally {
-          span.end();
+          try {
+            span.end();
+          } catch {
+            // Telemetry is fail-open.
+          }
         }
       },
     );
@@ -309,11 +464,11 @@ export function recordException(
 ): void {
   const activeSpan = trace.getActiveSpan();
   const span = activeSpan ?? trace.getTracer("@davidapps/telemetry-node").startSpan("exception");
-  span.setAttributes(toOtelAttributes(attributes));
+  span.setAttributes(toOtelAttributes(sanitizeAttributes(attributes)));
   span.recordException(exceptionForOtel(error));
   span.setStatus({
     code: SpanStatusCode.ERROR,
-    ...(error instanceof Error ? { message: error.message } : {}),
+    ...(error instanceof Error ? { message: redactText(error.message) } : {}),
   });
   if (!activeSpan) span.end();
 }

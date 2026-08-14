@@ -3,6 +3,8 @@ dist/
 .turbo/
 .next/
 coverage/
+.playwright-cli/
+output/
 .expo/
 .upstream/
 *.tgz
@@ -11,4 +13,3 @@ coverage/
 .env
 .env.*
 !.env.example
-

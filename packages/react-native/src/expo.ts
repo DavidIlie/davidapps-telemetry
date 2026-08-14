@@ -64,7 +64,10 @@ export function createExpoTelemetryResource(options: ExpoResourceOptions = {}): 
     string(constants.expoRuntimeVersion) ??
     string(expoConfig.runtimeVersion);
   const commitSha = options.commitSha ?? string(extra?.commitSha) ?? string(extra?.gitSha);
-  const serviceVersion = options.serviceVersion ?? string(expoConfig.version);
+  const marketingVersion = string(expoConfig.version);
+  // `service.version` is the deployed source revision across every DavidApps
+  // runtime. Keep the store-facing version separately as `app.version`.
+  const serviceVersion = options.serviceVersion ?? commitSha;
 
   return {
     serviceName: options.serviceName ?? string(expoConfig.slug) ?? string(expoConfig.name) ?? "expo-app",
@@ -76,6 +79,7 @@ export function createExpoTelemetryResource(options: ExpoResourceOptions = {}): 
     platform,
     attributes: {
       ...options.attributes,
+      ...(marketingVersion ? { "app.version": marketingVersion } : {}),
       ...(bundleId ? { "app.bundle.id": bundleId } : {}),
       ...(build ? { "app.build": build } : {}),
       ...(options.updateId ? { "app.update.id": options.updateId } : {}),

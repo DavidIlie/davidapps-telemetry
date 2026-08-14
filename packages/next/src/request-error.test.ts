@@ -58,4 +58,37 @@ describe("createNextRequestErrorHandler", () => {
     expect(captureException).not.toHaveBeenCalled();
     expect(flush).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ["beforeCapture", "beforeCapture"],
+    ["capture", "captureException"],
+    ["flush", "flush"],
+  ] as const)("contains %s failures", async (expectedStage, failingPart) => {
+    const failure = new Error(`${failingPart} broke`);
+    const onError = vi.fn();
+    const handler = createNextRequestErrorHandler({
+      telemetry: {
+        captureException: () => {
+          if (failingPart === "captureException") throw failure;
+        },
+        flush: async () => {
+          if (failingPart === "flush") throw failure;
+        },
+      },
+      beforeCapture: () => {
+        if (failingPart === "beforeCapture") throw failure;
+        return true;
+      },
+      onError,
+    });
+
+    await expect(
+      handler(
+        new Error("render failed"),
+        { path: "/", method: "GET" },
+        { routerKind: "App Router", routePath: "/", routeType: "render" },
+      ),
+    ).resolves.toBeUndefined();
+    expect(onError).toHaveBeenCalledWith(failure, expectedStage);
+  });
 });

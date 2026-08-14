@@ -1,0 +1,25 @@
+{
+  "name": "telemetry-expo-57-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@davidapps/telemetry-core": "workspace:*",
+    "@davidapps/telemetry-react-native": "workspace:*",
+    "expo": "57.0.13",
+    "expo-constants": "57.0.11",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.2"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.18",
+    "typescript": "7.0.2"
+  }
+}

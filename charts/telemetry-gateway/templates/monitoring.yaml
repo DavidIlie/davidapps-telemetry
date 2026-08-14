@@ -1,0 +1,45 @@
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "telemetry-gateway.name" . }}
+  labels:
+    {{- include "telemetry-gateway.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "telemetry-gateway.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+{{- end }}
+{{- if .Values.prometheusRule.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "telemetry-gateway.name" . }}
+  labels:
+    {{- include "telemetry-gateway.labels" . | nindent 4 }}
+spec:
+  groups:
+    - name: telemetry-gateway
+      rules:
+        - alert: TelemetryGatewayUnavailable
+          expr: kube_deployment_status_replicas_available{deployment="telemetry-gateway"} < 1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Telemetry gateway has no available replicas
+        - alert: TelemetryGatewayRejectingRequests
+          expr: sum(rate(telemetry_gateway_requests_total{result=~"upstream_error|unavailable"}[5m])) > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Telemetry gateway is unable to forward requests
+{{- end }}
+

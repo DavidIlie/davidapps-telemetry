@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.turbo/
+.next/
+coverage/
+.expo/
+.upstream/
+*.tgz
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+

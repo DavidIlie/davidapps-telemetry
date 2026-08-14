@@ -1,0 +1,5 @@
+.git/
+.upstream/
+node_modules/
+*.tgz
+

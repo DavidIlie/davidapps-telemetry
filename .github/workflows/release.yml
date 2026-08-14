@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - run: npm install --global npm@^11.5.1
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm packages:check
+      - run: pnpm licenses:check
+      - name: Pack and publish with npm OIDC
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/npm-packages"
+          for package in core web node next react-native; do
+            tarball=$(pnpm --dir "packages/$package" pack \
+              --pack-destination "$RUNNER_TEMP/npm-packages" \
+              --json | jq -r .filename)
+            npm publish "$tarball" --access public
+          done

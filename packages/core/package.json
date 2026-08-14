@@ -1,0 +1,42 @@
+{
+  "name": "@davidapps/telemetry-core",
+  "version": "0.1.0",
+  "description": "Runtime-neutral telemetry client and adapter contracts.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DavidIlie/davidapps-telemetry.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/DavidIlie/davidapps-telemetry#readme",
+  "bugs": { "url": "https://github.com/DavidIlie/davidapps-telemetry/issues" },
+  "engines": { "node": ">=20" },
+  "type": "module",
+  "sideEffects": false,
+  "files": ["dist", "README.md", "LICENSE"],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm,cjs --dts",
+    "check": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "lint": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist coverage"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

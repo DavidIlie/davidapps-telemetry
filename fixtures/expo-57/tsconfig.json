@@ -1,0 +1,12 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@davidapps/telemetry-core": ["../../packages/core/src/index.ts"],
+      "@davidapps/telemetry-react-native": ["../../packages/react-native/src/index.ts"],
+      "@davidapps/telemetry-react-native/expo": ["../../packages/react-native/src/expo.ts"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+}

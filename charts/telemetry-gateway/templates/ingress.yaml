@@ -1,0 +1,56 @@
+{{- range $project := .Values.projects }}
+{{- $ingress := default dict $project.ingress }}
+{{- range $host := $project.hosts }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: telemetry-{{ $project.id }}-{{ $host | replace "." "-" }}
+  labels:
+    {{- include "telemetry-gateway.labels" $ | nindent 4 }}
+    app.davidapps.dev/telemetry-project: {{ $project.id | quote }}
+  annotations:
+    nginx.ingress.kubernetes.io/limit-connections: {{ default 20 $project.ratePerSecond | quote }}
+    nginx.ingress.kubernetes.io/limit-rps: {{ default 20 $project.ratePerSecond | quote }}
+    nginx.ingress.kubernetes.io/proxy-body-size: {{ printf "%dk" (div (int64 $.Values.gateway.maxBodyBytes) 1024) | quote }}
+    {{- with $ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  ingressClassName: {{ default "external" $ingress.className }}
+  rules:
+    - host: {{ $host | quote }}
+      http:
+        paths:
+          - path: /collect
+            pathType: Exact
+            backend:
+              service:
+                name: {{ include "telemetry-gateway.name" $ }}
+                port:
+                  name: http
+          {{- if $project.allowTraces }}
+          - path: /v1/traces
+            pathType: Exact
+            backend:
+              service:
+                name: {{ include "telemetry-gateway.name" $ }}
+                port:
+                  name: http
+          {{- end }}
+          {{- if $project.allowLogs }}
+          - path: /v1/logs
+            pathType: Exact
+            backend:
+              service:
+                name: {{ include "telemetry-gateway.name" $ }}
+                port:
+                  name: http
+          {{- end }}
+  {{- with $ingress.tlsSecretName }}
+  tls:
+    - hosts: [{{ $host | quote }}]
+      secretName: {{ . | quote }}
+  {{- end }}
+{{- end }}
+{{- end }}

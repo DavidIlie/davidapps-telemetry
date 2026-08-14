@@ -1,0 +1,37 @@
+version: 1
+sources:
+  - name: grafana-faro-web-sdk
+    repository: https://github.com/grafana/faro-web-sdk
+    license: Apache-2.0
+    commit: fafe843c8b21efe98a64250a11b48828604381fb
+    use: dependency
+  - name: vercel-otel
+    repository: https://github.com/vercel/otel
+    license: MIT
+    commit: 4745daa7559cd41d2fceedeadb56aeec7724735a
+    use: dependency
+  - name: vercel-analytics
+    repository: https://github.com/vercel/analytics
+    license: MIT
+    commit: d5df714080cbfdc7ee5e84b9aa6918e291a8e979
+    use: api-reference
+  - name: posthog-js
+    repository: https://github.com/PostHog/posthog-js
+    license: mixed-apache-2.0-and-mit
+    commit: 9a58462065dbe612ee4f6728d28c6275358643ad
+    use: api-reference
+  - name: opentelemetry-js
+    repository: https://github.com/open-telemetry/opentelemetry-js
+    license: Apache-2.0
+    commit: dependency-version-pinned-per-package
+    use: dependency
+  - name: opentelemetry-demo-react-native
+    repository: https://github.com/open-telemetry/opentelemetry-demo
+    license: Apache-2.0
+    commit: 2e05c45b85b985a691cc75082c234e8d6ac0b2e9
+    use: api-reference
+  - name: honeycomb-opentelemetry-react-native
+    repository: https://github.com/honeycombio/honeycomb-opentelemetry-react-native
+    license: MIT
+    commit: 07d144459177a58a347e18be762cf8f04e63cb1d
+    use: api-reference

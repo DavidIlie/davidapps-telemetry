@@ -1,0 +1,53 @@
+replicaCount: 3
+
+image:
+  repository: ghcr.io/davidilie/davidapps-telemetry-gateway
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  port: 8080
+
+alloy:
+  faroUrl: http://alloy.observability.svc.cluster.local:12347
+  otlpUrl: http://alloy.observability.svc.cluster.local:4318
+
+gateway:
+  maxBodyBytes: 524288
+  upstreamTimeoutMs: 5000
+
+# Public keys are project routing identifiers, not secrets.
+projects: []
+# - id: example
+#   hosts: [e.example.com]
+#   allowedOrigins: [https://example.com]
+#   publicKey: public-example
+#   ratePerSecond: 20
+#   burst: 40
+#   allowFaro: true
+#   allowTraces: true
+#   allowLogs: false
+#   allowMetrics: false
+#   ingress:
+#     className: external
+#     annotations: {}
+#     tlsSecretName: ""
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    memory: 256Mi
+
+serviceMonitor:
+  enabled: true
+
+prometheusRule:
+  enabled: true
+
+networkPolicy:
+  enabled: true
+  ingressNamespace: network
+  monitoringNamespace: observability
+  alloyNamespace: observability

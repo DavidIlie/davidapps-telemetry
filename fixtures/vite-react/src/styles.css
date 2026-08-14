@@ -1,0 +1,27 @@
+:root {
+  color: #e9eef5;
+  background: #111722;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  display: grid;
+  gap: 1rem;
+  max-width: 42rem;
+  margin: 5rem auto;
+  padding: 0 1.5rem;
+}
+
+button {
+  width: fit-content;
+  padding: 0.65rem 1rem;
+  color: inherit;
+  background: #243247;
+  border: 1px solid #465a78;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}

@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "DavidApps Telemetry Fixture",
+    "slug": "davidapps-telemetry-fixture",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "ios": {
+      "bundleIdentifier": "dev.davidapps.telemetry.fixture",
+      "buildNumber": "1"
+    },
+    "android": {
+      "package": "dev.davidapps.telemetry.fixture",
+      "versionCode": 1
+    },
+    "extra": {
+      "commitSha": "fixture-commit"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@davidapps/telemetry-next-16-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "check": "tsc --noEmit",
+    "test": "TELEMETRY_ENABLED=false NEXT_PUBLIC_TELEMETRY_ENABLED=false next build",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf .next"
+  },
+  "dependencies": {
+    "@davidapps/telemetry-next": "workspace:*",
+    "@davidapps/telemetry-web": "workspace:*",
+    "next": "16.3.1",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "25.0.10",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "typescript": "7.0.2"
+  }
+}

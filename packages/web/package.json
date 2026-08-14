@@ -1,0 +1,76 @@
+{
+  "name": "@davidapps/telemetry-web",
+  "version": "0.1.0",
+  "description": "Small Grafana Faro browser adapter for DavidApps telemetry.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DavidIlie/davidapps-telemetry.git",
+    "directory": "packages/web"
+  },
+  "homepage": "https://github.com/DavidIlie/davidapps-telemetry#readme",
+  "bugs": { "url": "https://github.com/DavidIlie/davidapps-telemetry/issues" },
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./react": {
+      "import": {
+        "types": "./dist/react.d.mts",
+        "default": "./dist/react.mjs"
+      },
+      "require": {
+        "types": "./dist/react.d.cts",
+        "default": "./dist/react.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown src/index.ts src/react.tsx --format esm,cjs --dts",
+    "check": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "lint": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist coverage"
+  },
+  "dependencies": {
+    "@davidapps/telemetry-core": "workspace:*",
+    "@grafana/faro-web-sdk": "2.9.0",
+    "@grafana/faro-web-tracing": "2.9.0",
+    "@opentelemetry/api": "1.9.0"
+  },
+  "peerDependencies": {
+    "react": ">=18.2.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "19.2.18",
+    "react": "19.2.8"
+  }
+}

@@ -1,0 +1,10 @@
+.git
+.github
+.turbo
+.upstream
+**/.turbo
+**/dist
+**/node_modules
+coverage
+node_modules
+

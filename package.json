@@ -1,0 +1,33 @@
+{
+  "name": "davidapps-telemetry-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Small, self-hosted telemetry SDKs for Grafana Alloy, Tempo, VictoriaLogs, and Prometheus.",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@10.22.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "check": "turbo run check",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "licenses:sync": "node scripts/sync-package-licenses.mjs",
+    "licenses:check": "node scripts/check-licenses.mjs",
+    "packages:check": "pnpm --recursive --filter './packages/**' exec publint",
+    "clean": "turbo run clean && rm -rf node_modules .turbo",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "turbo run build test check && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "3.0.0",
+    "@types/node": "26.2.0",
+    "publint": "0.3.23",
+    "tsdown": "0.22.14",
+    "turbo": "2.10.10",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10"
+  }
+}

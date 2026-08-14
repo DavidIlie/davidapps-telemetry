@@ -1,0 +1,14 @@
+{{- if gt (int .Values.replicaCount) 1 }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "telemetry-gateway.name" . }}
+  labels:
+    {{- include "telemetry-gateway.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ sub (int .Values.replicaCount) 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "telemetry-gateway.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

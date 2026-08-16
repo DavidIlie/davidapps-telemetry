@@ -163,7 +163,9 @@ export class FaroTelemetryAdapter implements TelemetryAdapter {
     return {
       setAttribute(key: string, value: AttributeValue) {
         const safe = sanitizeAttributes({ [key]: value });
-        if (safe[key] !== undefined) {
+        // hasOwn: dropped magic keys (__proto__ et al.) still resolve through
+        // the prototype chain with bracket access.
+        if (Object.hasOwn(safe, key)) {
           span.setAttribute(key, toOtelAttributes(safe)[key] ?? "");
         }
         return this;

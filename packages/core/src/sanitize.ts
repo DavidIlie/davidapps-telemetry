@@ -23,6 +23,14 @@ const MAX_STACK_LENGTH = 16_384;
 const MAX_ARRAY_LENGTH = 32;
 const MAX_NAME_LENGTH = 256;
 
+/**
+ * Keys that trigger legacy prototype-setter or constructor-shadowing behavior
+ * when assigned onto a plain object with bracket notation. They are never
+ * legitimate telemetry attribute names; dropping them keeps every sanitized
+ * result a plain data object with an untouched prototype.
+ */
+const FORBIDDEN_ATTRIBUTE_KEY = /^(?:__proto__|prototype|constructor)$/;
+
 /** Returns true for secret, direct-identifier, body, header, or reserved identity keys. */
 export function isSensitiveAttributeKey(key: string): boolean {
   return (
@@ -92,6 +100,7 @@ export function sanitizeAttributes(attributes: Attributes = {}): Record<string, 
       value == null ||
       key.length === 0 ||
       key.length > MAX_KEY_LENGTH ||
+      FORBIDDEN_ATTRIBUTE_KEY.test(key) ||
       isSensitiveAttributeKey(key)
     ) {
       continue;

@@ -282,6 +282,45 @@ describe("telemetry gateway policy and CORS", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("rejects wrong, missing, and length-variant keys without reaching the upstream", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(null, { status: 202 }));
+    const app = gateway(fetchMock);
+
+    for (const key of [
+      "public-tes", // one byte short
+      "public-test-extra", // correct prefix, longer
+      "Public-test", // case variant
+      " public-test", // leading whitespace
+    ]) {
+      const response = await app.inject({
+        method: "POST",
+        url: "/collect",
+        headers: signalHeaders({ "x-api-key": key }),
+        payload: "{}",
+      });
+      expect(response.statusCode, key).toBe(401);
+      expect(response.json()).toEqual({ error: "invalid_key" });
+    }
+
+    const missing = await app.inject({
+      method: "POST",
+      url: "/collect",
+      headers: { host: "e.example.com", origin: "https://example.com" },
+      payload: "{}",
+    });
+    expect(missing.statusCode).toBe(401);
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    const valid = await app.inject({
+      method: "POST",
+      url: "/collect",
+      headers: signalHeaders(),
+      payload: "{}",
+    });
+    expect(valid.statusCode).toBe(202);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
   it("enforces explicit route permissions while retaining documented defaults", async () => {
     const { allowTraces: _allowTraces, ...projectWithoutTracePermission } = config.projects[0];
     const project = {

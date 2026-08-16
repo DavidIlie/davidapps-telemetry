@@ -42,6 +42,52 @@ describe("TelemetryClient", () => {
     expect(send).not.toHaveBeenCalled();
   });
 
+  it("drops magic object keys instead of mutating the result prototype", async () => {
+    const sent: TelemetrySignal[] = [];
+    const telemetry = createTelemetryClient({
+      adapter: { send: (signal) => void sent.push(signal) },
+      resource: { serviceName: "test" },
+    });
+
+    telemetry.capture("prototype.keys", {
+      "__proto__": ["polluted"],
+      constructor: "shadowed",
+      prototype: "shadowed",
+      safe: "kept",
+    } as Record<string, string | string[]>);
+    await telemetry.flush();
+
+    expect(sent).toHaveLength(1);
+    const attributes = sent[0]!.attributes;
+    expect(attributes).toEqual({ safe: "kept" });
+    expect(Object.getPrototypeOf(attributes)).toBe(Object.prototype);
+    expect(Object.prototype.constructor).toBe(Object);
+  });
+
+  it("ignores magic-key span attributes instead of resolving them through the prototype chain", () => {
+    const setAttribute = vi.fn();
+    const telemetry = createTelemetryClient({
+      adapter: {
+        send: vi.fn(),
+        startSpan: () => ({
+          setAttribute,
+          recordException: vi.fn(),
+          setStatus: vi.fn().mockReturnThis(),
+          end: vi.fn(),
+        }),
+      },
+      resource: { serviceName: "test" },
+    });
+
+    const span = telemetry.startSpan("span");
+    span.setAttribute("__proto__", ["polluted"]);
+    span.setAttribute("constructor", "shadowed");
+    span.setAttribute("safe", "kept");
+
+    expect(setAttribute).toHaveBeenCalledTimes(1);
+    expect(setAttribute).toHaveBeenCalledWith("safe", "kept");
+  });
+
   it("records and rethrows errors from withSpan", async () => {
     const recordException = vi.fn();
     const end = vi.fn();

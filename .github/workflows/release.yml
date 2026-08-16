@@ -29,19 +29,22 @@ jobs:
     runs-on: ubuntu-latest
     environment: npm
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ env.RELEASE_TAG }}
           fetch-depth: 0
+          persist-credentials: false
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
           package-manager-cache: false
 
-      # Trusted publishing requires a recent npm CLI. NPM_TOKEN remains a
+      # Trusted publishing requires a recent npm CLI. Pin the exact version:
+      # this job holds the OIDC token and npm credentials, so a floating range
+      # would be a supply-chain hole in the publish path. NPM_TOKEN remains a
       # temporary bootstrap path until every package has an npm trusted publisher.
-      - run: npm install --global npm@^11.5.1
+      - run: npm install --global npm@11.19.0
       - run: corepack enable
 
       - name: Resolve and verify release ref
@@ -62,7 +65,7 @@ jobs:
       - name: Pack all npm packages
         run: node scripts/pack-packages.mjs --output "$RUNNER_TEMP/npm-packages"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: npm-packages-${{ env.RELEASE_TAG }}
           path: ${{ runner.temp }}/npm-packages

@@ -99,7 +99,9 @@ class SafeSpan implements TelemetrySpan {
   setAttribute(name: string, value: AttributeValue): this {
     if (this.#ended) return this;
     const sanitized = sanitizeAttributes({ [name]: value });
-    if (!(name in sanitized)) return this;
+    // hasOwn, not `in`: dropped magic keys such as __proto__ still resolve
+    // through the prototype chain on a plain object.
+    if (!Object.hasOwn(sanitized, name)) return this;
 
     try {
       this.delegate.setAttribute(name, sanitized[name]!);

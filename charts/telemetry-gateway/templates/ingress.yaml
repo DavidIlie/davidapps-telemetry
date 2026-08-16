@@ -14,13 +14,19 @@ metadata:
   labels:
     {{- include "telemetry-gateway.labels" $ | nindent 4 }}
     app.davidapps.dev/telemetry-project: {{ $project.id | quote }}
+  {{- $annotations := dict
+    "nginx.ingress.kubernetes.io/limit-connections" (default 20 $project.ratePerSecond | toString)
+    "nginx.ingress.kubernetes.io/limit-rps" (default 20 $project.ratePerSecond | toString)
+    "nginx.ingress.kubernetes.io/proxy-body-size" (printf "%dk" (div (int64 $.Values.gateway.maxBodyBytes) 1024))
+  }}
+  {{- /* Public ingest must never silently fall back to cleartext HTTP once a TLS secret exists. Operators keep the final word through explicit annotations. */}}
+  {{- if $ingress.tlsSecretName }}
+  {{- $_ := set $annotations "nginx.ingress.kubernetes.io/ssl-redirect" "true" }}
+  {{- $_ := set $annotations "nginx.ingress.kubernetes.io/force-ssl-redirect" "true" }}
+  {{- end }}
+  {{- $annotations = mergeOverwrite $annotations (default dict $ingress.annotations) }}
   annotations:
-    nginx.ingress.kubernetes.io/limit-connections: {{ default 20 $project.ratePerSecond | quote }}
-    nginx.ingress.kubernetes.io/limit-rps: {{ default 20 $project.ratePerSecond | quote }}
-    nginx.ingress.kubernetes.io/proxy-body-size: {{ printf "%dk" (div (int64 $.Values.gateway.maxBodyBytes) 1024) | quote }}
-    {{- with $ingress.annotations }}
-    {{- toYaml . | nindent 4 }}
-    {{- end }}
+    {{- toYaml $annotations | nindent 4 }}
 spec:
   ingressClassName: {{ default "external" $ingress.className }}
   rules:

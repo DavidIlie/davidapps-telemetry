@@ -75,6 +75,21 @@
         "maxBodyBytes": { "type": "integer", "minimum": 1 },
         "upstreamTimeoutMs": { "type": "integer", "minimum": 1 }
       }
+    },
+    "image": {
+      "type": "object",
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "tag": { "type": "string", "minLength": 1 },
+        "digest": {
+          "type": "string",
+          "pattern": "^$|^sha256:[0-9a-f]{64}$"
+        },
+        "pullPolicy": {
+          "type": "string",
+          "enum": ["Always", "IfNotPresent", "Never"]
+        }
+      }
     }
   }
 }

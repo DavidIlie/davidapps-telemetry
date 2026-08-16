@@ -41,23 +41,23 @@ jobs:
             echo '| Signal | Value |'
             echo '| --- | --- |'
             echo "| CPU threads | $(nproc) |"
-            echo "| Memory | $(awk '/MemTotal/ { printf \"%.1f GiB\", $2 / 1024 / 1024 }' /proc/meminfo) |"
+            echo "| Memory | $(awk '/MemTotal/ { printf "%.1f GiB", $2 / 1024 / 1024 }' /proc/meminfo) |"
             echo "| Node | $(node --version) |"
             echo "| Kernel | $(uname -sr) |"
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Enable package manager
         run: corepack enable
       - name: Install dependencies
-        run: /usr/bin/time -v pnpm install --frozen-lockfile
+        run: time pnpm install --frozen-lockfile
       - name: Check, test and build
-        run: /usr/bin/time -v sh -c 'pnpm check && pnpm test && pnpm build'
+        run: time sh -c 'pnpm check && pnpm test && pnpm build'
       - name: CPU benchmark
-        run: /usr/bin/time -v node -e "require('node:crypto').pbkdf2Sync('runner-benchmark', 'fixed-salt', 2500000, 64, 'sha512')"
+        run: time node -e "require('node:crypto').pbkdf2Sync('runner-benchmark', 'fixed-salt', 2500000, 64, 'sha512')"
       - name: Work-volume write benchmark
         shell: bash
         run: |
           set -euo pipefail
           benchmark_file="$RUNNER_TEMP/runner-benchmark.bin"
-          /usr/bin/time -v dd if=/dev/zero of="$benchmark_file" bs=4M count=128 conv=fsync status=none
-          /usr/bin/time -v dd if="$benchmark_file" of=/dev/null bs=4M iflag=direct status=none
+          time dd if=/dev/zero of="$benchmark_file" bs=4M count=128 conv=fsync status=none
+          time dd if="$benchmark_file" of=/dev/null bs=4M iflag=direct status=none
           rm -f "$benchmark_file"

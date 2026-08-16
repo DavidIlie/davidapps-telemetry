@@ -64,6 +64,30 @@ describe("TelemetryClient", () => {
     expect(Object.prototype.constructor).toBe(Object);
   });
 
+  it("ignores magic-key span attributes instead of resolving them through the prototype chain", () => {
+    const setAttribute = vi.fn();
+    const telemetry = createTelemetryClient({
+      adapter: {
+        send: vi.fn(),
+        startSpan: () => ({
+          setAttribute,
+          recordException: vi.fn(),
+          setStatus: vi.fn().mockReturnThis(),
+          end: vi.fn(),
+        }),
+      },
+      resource: { serviceName: "test" },
+    });
+
+    const span = telemetry.startSpan("span");
+    span.setAttribute("__proto__", ["polluted"]);
+    span.setAttribute("constructor", "shadowed");
+    span.setAttribute("safe", "kept");
+
+    expect(setAttribute).toHaveBeenCalledTimes(1);
+    expect(setAttribute).toHaveBeenCalledWith("safe", "kept");
+  });
+
   it("records and rethrows errors from withSpan", async () => {
     const recordException = vi.fn();
     const end = vi.fn();

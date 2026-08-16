@@ -89,8 +89,10 @@ export class OpenTelemetrySpan implements TelemetrySpan {
 
   setAttribute(name: string, value: AttributeValue): this {
     const safe = sanitizeAttributes({ [name]: value });
-    if (safe[name] !== undefined) {
-      this.#span.setAttribute(name, toOtelAttributeValue(safe[name]));
+    // hasOwn: dropped magic keys (__proto__ et al.) still resolve through the
+    // prototype chain with bracket access and would throw in toOtelAttributeValue.
+    if (Object.hasOwn(safe, name)) {
+      this.#span.setAttribute(name, toOtelAttributeValue(safe[name]!));
     }
     return this;
   }

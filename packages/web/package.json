@@ -1,6 +1,6 @@
 {
   "name": "@davidilie/telemetry-web",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Small Grafana Faro browser adapter for DavidApps telemetry.",
   "keywords": [
     "analytics",

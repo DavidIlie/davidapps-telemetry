@@ -1,6 +1,6 @@
 {
   "name": "@davidilie/telemetry-next",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Runtime-safe Next.js telemetry backed by @vercel/otel.",
   "keywords": [
     "analytics",

@@ -1,6 +1,6 @@
 {
   "name": "@davidilie/telemetry-react-native",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Small OpenTelemetry/OTLP client for React Native and Expo applications.",
   "keywords": [
     "analytics",

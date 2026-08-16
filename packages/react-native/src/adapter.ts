@@ -85,10 +85,17 @@ function toOtelValue(value: AttributeValue): OtelAttributeValue {
   return value.map(String);
 }
 
+// Bracket assignment onto a plain object must never see these keys: they hit
+// the legacy prototype setter or shadow the constructor instead of becoming
+// ordinary own properties. Callers sanitize first; this guard keeps the helper
+// safe even if a future call site reorders those steps.
+const FORBIDDEN_ATTRIBUTE_KEY = /^(?:__proto__|prototype|constructor)$/;
+
 function toOtelAttributes(attributes: Attributes): OtelAttributes {
   const result: OtelAttributes = {};
   for (const [key, value] of Object.entries(attributes)) {
-    if (value != null) result[key] = toOtelValue(value);
+    if (value == null || FORBIDDEN_ATTRIBUTE_KEY.test(key)) continue;
+    result[key] = toOtelValue(value);
   }
   return result;
 }

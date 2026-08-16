@@ -1,0 +1,34 @@
+name: Runner DinD port probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: davidapps-linux-x64
+    timeout-minutes: 10
+    steps:
+      - name: Probe published ports
+        shell: bash
+        run: |
+          set -euo pipefail
+          cleanup() {
+            docker rm --force random-loopback fixed-loopback fixed-all >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          docker run --detach --rm --name random-loopback --publish 127.0.0.1::80 nginx:1.29-alpine
+          docker run --detach --rm --name fixed-loopback --publish 127.0.0.1:28080:80 nginx:1.29-alpine
+          docker run --detach --rm --name fixed-all --publish 28081:80 nginx:1.29-alpine
+
+          random_mapping=$(docker port random-loopback 80/tcp)
+          random_port=${random_mapping##*:}
+          echo "random mapping: $random_mapping"
+          docker inspect random-loopback fixed-loopback fixed-all --format '{{.Name}} {{json .NetworkSettings.Ports}}'
+
+          curl --fail --show-error --silent --retry 10 --retry-delay 1 "http://127.0.0.1:${random_port}" >/dev/null
+          curl --fail --show-error --silent --retry 10 --retry-delay 1 http://127.0.0.1:28080 >/dev/null
+          curl --fail --show-error --silent --retry 10 --retry-delay 1 http://127.0.0.1:28081 >/dev/null

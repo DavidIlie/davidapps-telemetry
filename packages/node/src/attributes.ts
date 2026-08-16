@@ -34,13 +34,19 @@ export function toOtelAttributeValue(
   return value.map(String);
 }
 
+// Bracket assignment onto a plain object must never see these keys: they hit
+// the legacy prototype setter or shadow the constructor instead of becoming
+// ordinary own properties. Core sanitization already drops them; this guard
+// keeps direct adapter-level callers equally safe.
+const FORBIDDEN_ATTRIBUTE_KEY = /^(?:__proto__|prototype|constructor)$/;
+
 export function toOtelAttributes(
   attributes: DavidAppsAttributes = {},
 ): OtelAttributes {
   const result: OtelAttributes = {};
 
   for (const [key, value] of Object.entries(attributes)) {
-    if (value == null) continue;
+    if (value == null || FORBIDDEN_ATTRIBUTE_KEY.test(key)) continue;
     result[key] = toOtelAttributeValue(value);
   }
 

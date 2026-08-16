@@ -117,6 +117,12 @@ The counter is process-local and starts at zero after restart. The current
 gateway does not expose request latency, body size, or distributed quota state.
 Scrape every replica and aggregate with Prometheus.
 
+`/metrics` answers on any request Host. It stays private only because the Helm
+ingress publishes exact signal paths (never `/metrics`) and the chart's default
+NetworkPolicy admits traffic solely from the ingress and monitoring namespaces.
+Keep `networkPolicy.enabled: true`; disabling it exposes project IDs and
+outcome counters to every workload in the cluster.
+
 Automatic HTTP request logging is disabled to avoid recording public payloads,
 headers, and noisy health traffic. Each signal request attributable to a
 configured project emits one safe structured outcome containing only project,

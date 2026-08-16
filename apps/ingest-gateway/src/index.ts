@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import Fastify, {
   LogController,
   type FastifyInstance,
@@ -34,6 +35,18 @@ const CORS_EXPOSED_HEADERS = "retry-after, x-faro-session-status";
 function firstHeader(value: string | readonly string[] | undefined): string | undefined {
   if (typeof value === "string") return value;
   return value?.[0];
+}
+
+/**
+ * Compare public routing keys without a length or prefix timing oracle. The
+ * key is a public identifier rather than a credential, but the check should
+ * still not teach an attacker how it differs byte by byte.
+ */
+function publicKeyMatches(presented: string | undefined, configured: string): boolean {
+  if (presented === undefined) return false;
+  const presentedDigest = createHash("sha256").update(presented).digest();
+  const configuredDigest = createHash("sha256").update(configured).digest();
+  return timingSafeEqual(presentedDigest, configuredDigest);
 }
 
 function hostname(request: FastifyRequest): string {
@@ -285,7 +298,7 @@ export function createGateway(
         return reply.code(403).send({ error: "forbidden_origin" });
       }
 
-      if (project.publicKey && firstHeader(request.headers["x-api-key"]) !== project.publicKey) {
+      if (project.publicKey && !publicKeyMatches(firstHeader(request.headers["x-api-key"]), project.publicKey)) {
         metrics.increment(project.id, route, "invalid_key");
         logOutcome(request, {
           project: project.id,

@@ -48,6 +48,18 @@ describe("Node telemetry", () => {
     expect(result.values).not.toBe(input);
   });
 
+  it("drops magic object keys instead of mutating the result prototype", () => {
+    const result = toOtelAttributes({
+      "__proto__": ["polluted"],
+      constructor: "shadowed",
+      prototype: "shadowed",
+      safe: "kept",
+    } as Record<string, string | string[]>);
+
+    expect(result).toEqual({ safe: "kept" });
+    expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+  });
+
   it("does not create a span when telemetry is disabled", async () => {
     const telemetry = createNodeTelemetry({
       resource: { serviceName: "test" },

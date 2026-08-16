@@ -9,6 +9,10 @@ import type {
 } from "@grafana/faro-web-sdk";
 
 const URL_KEY = /(?:^|[._-])(?:url|uri|href|filename)(?:$|[._-])|^(?:http\.target|http\.url)$/i;
+// Rebuilt plain objects must never be assigned these keys: the assignment hits
+// the legacy __proto__ setter or shadows the constructor instead of becoming an
+// ordinary own property. They are never legitimate telemetry payload keys.
+const FORBIDDEN_PAYLOAD_KEY = /^(?:__proto__|prototype|constructor)$/;
 const PROTECTED_RESOURCE_KEY = /^(?:service\.(?:name|version|namespace)|deployment\.(?:environment(?:\.name)?|platform)|vcs\.(?:repository\.url\.full|ref\.head\.revision)|app\.(?:repository\.url|platform)|mobile\.platform)$/i;
 const DIRECT_IDENTIFIER_KEY = /^(?:enduser\.(?:id|email)|user\.(?:id|email|name|full_name)|device\.id)$/i;
 const MAX_DEPTH = 24;
@@ -44,6 +48,7 @@ function sanitizeOtelAnyValue(
 
   const result: Record<string, unknown> = {};
   for (const [key, entry] of Object.entries(value)) {
+    if (FORBIDDEN_PAYLOAD_KEY.test(key)) continue;
     const sanitized = sanitizeOtelAnyValue(
       entry,
       attributeKey,
@@ -95,7 +100,13 @@ function sanitizeUnknown(
 
   const result: Record<string, unknown> = {};
   for (const [childKey, entry] of Object.entries(record)) {
-    if (childKey === "originalError" || shouldDropKey(childKey)) continue;
+    if (
+      childKey === "originalError" ||
+      FORBIDDEN_PAYLOAD_KEY.test(childKey) ||
+      shouldDropKey(childKey)
+    ) {
+      continue;
+    }
     const sanitized = sanitizeUnknown(entry, childKey, depth + 1, seen);
     if (sanitized !== undefined) result[childKey] = sanitized;
   }

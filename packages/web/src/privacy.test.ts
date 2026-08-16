@@ -70,6 +70,28 @@ describe("Faro privacy", () => {
     });
   });
 
+  it("never assigns magic keys onto rebuilt objects", () => {
+    // JSON.parse produces own __proto__ properties; the rebuild loops must
+    // drop them instead of triggering the legacy prototype setter.
+    const parsed = JSON.parse(
+      `{"type":"exception","timestamp":"2026-01-01T00:00:00.000Z","meta":{},` +
+        `"payload":{"value":"boom","contexts":{"__proto__":{"isAdmin":true},"safe":"1"}},` +
+        `"__proto__":{"top":true}}`,
+    ) as TransportItem;
+
+    const sanitized = sanitizeFaroTransportItem(parsed) as unknown as Record<string, any>;
+
+    expect(Object.hasOwn(sanitized, "__proto__")).toBe(false);
+    expect(Object.getPrototypeOf(sanitized)).not.toEqual({ top: true });
+    expect(sanitized.top).toBeUndefined();
+
+    const contexts = sanitized.payload.contexts;
+    expect(Object.hasOwn(contexts, "__proto__")).toBe(false);
+    expect(Object.getPrototypeOf(contexts)).toBe(Object.prototype);
+    expect(contexts.isAdmin).toBeUndefined();
+    expect(contexts.safe).toBe("1");
+  });
+
   it("re-sanitizes user hook output and drops items when hooks fail", () => {
     const hook = createPrivacyBeforeSend((transportItem) => ({
       ...transportItem,

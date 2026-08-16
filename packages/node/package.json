@@ -1,6 +1,6 @@
 {
   "name": "@davidilie/telemetry-node",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "OpenTelemetry-backed telemetry for Node.js services.",
   "keywords": [
     "analytics",

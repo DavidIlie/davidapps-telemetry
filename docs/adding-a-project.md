@@ -13,6 +13,8 @@ before adding events; otherwise telemetry becomes an expensive pile of strings.
   `/register`.
 - Vite/React/browser: `@davidilie/telemetry-web`.
 - Expo/React Native: `@davidilie/telemetry-react-native`.
+- Stripe server webhooks: optionally add `@davidilie/telemetry-stripe` after
+  signature verification and caller-owned event deduplication.
 - Another runtime: implement `TelemetryAdapter` around a maintained standard
   transport by following [custom-adapter.md](custom-adapter.md).
 
@@ -77,6 +79,50 @@ the [signal taxonomy and cardinality rules](signal-model.md).
 If a fact is security-, billing-, or authorization-critical, record it in the
 trusted application database/audit system. Public client telemetry is not an
 authoritative ledger.
+
+### Optional Stripe webhook signals
+
+Install the Stripe mapper beside the server adapter and Stripe's official SDK:
+
+```sh
+pnpm add @davidilie/telemetry-stripe @davidilie/telemetry-node stripe
+```
+
+The webhook boundary remains application-owned:
+
+```ts
+import { recordStripeWebhookEvent } from "@davidilie/telemetry-stripe";
+
+const signature = request.headers.get("stripe-signature");
+if (!signature) return new Response("Missing signature", { status: 400 });
+
+const event = stripe.webhooks.constructEvent(
+  await request.text(),
+  signature,
+  process.env.STRIPE_WEBHOOK_SECRET!,
+);
+
+// Back this with persistent storage and an atomic uniqueness guarantee.
+if (await claimStripeEvent(event.id)) {
+  recordStripeWebhookEvent(telemetry, event);
+  await telemetry.flush();
+}
+
+return Response.json({ received: true });
+```
+
+Verify against the untouched raw body before parsing it. Deduplicate the event
+ID across replicas and restarts because Stripe can retry delivery. Keep the
+actual order/subscription/refund update in an authoritative transaction; the
+telemetry result is best-effort and is not a reason to accept or reject a
+billing operation.
+
+Choose one canonical amount family before making a dashboard. Do not add
+Checkout, PaymentIntent, Charge, and Invoice amounts together: one payment can
+produce all four. Use `refund.created` for individual refund amounts;
+`charge.refunded` is lifecycle-only because Stripe reports a cumulative amount
+there. The complete allowlist and privacy boundary are in the
+[Stripe package guide](../packages/stripe/README.md).
 
 ## 4. Register public ingest
 

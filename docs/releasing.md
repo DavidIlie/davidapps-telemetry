@@ -1,9 +1,9 @@
 # Release procedure
 
-All five public npm packages share one release version and are published from
+All six public npm packages share one release version and are published from
 an immutable `v<semver>` Git tag. The order is core, web, Node, Next, React
-Native so a brand-new scope can be bootstrapped without publishing an adapter
-before its internal dependency.
+Native, then Stripe so a brand-new scope can be bootstrapped without publishing
+an adapter or integration before its internal dependency.
 
 Never publish from an uncommitted worktree or directly from package source.
 The workflow publishes the exact verified tarballs it uploads as an artifact.
@@ -105,7 +105,7 @@ registry outage.
 After the job succeeds:
 
 ```sh
-for package in core web node next react-native; do
+for package in core web node next react-native stripe; do
   npm view "@davidilie/telemetry-$package@0.1.1" \
     version dist.integrity dist.tarball --json
 done

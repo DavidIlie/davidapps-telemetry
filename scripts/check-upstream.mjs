@@ -69,7 +69,7 @@ for (const [release, commit] of otelReleases) {
   assert(match.commit === commit, `OpenTelemetry JS ${release} must resolve to ${commit}`);
 }
 
-const packageDirectories = ["core", "web", "node", "next", "react-native"];
+const packageDirectories = ["core", "web", "node", "next", "react-native", "stripe"];
 const dependencyVersions = new Set();
 const supportedOtelVersions = new Set(["2.10.0", "0.221.0", "1.9.0", "1.9.1"]);
 for (const directory of packageDirectories) {

@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 export const root = new URL("../", import.meta.url);
 // This is both the public package catalog and publish order. Dependencies must
 // precede adapters so a fresh scope can be bootstrapped in one release run.
-export const packageDirectories = ["core", "web", "node", "next", "react-native"];
+export const packageDirectories = ["core", "web", "node", "next", "react-native", "stripe"];
 
 export async function readPackages() {
   return Promise.all(

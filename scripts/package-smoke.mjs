@@ -38,6 +38,7 @@ const runtimeSpecifiers = [
   "@davidilie/telemetry-next/node",
   "@davidilie/telemetry-react-native",
   "@davidilie/telemetry-react-native/expo",
+  "@davidilie/telemetry-stripe",
 ];
 
 async function createExpoConstantsStub(consumer) {

@@ -215,6 +215,12 @@ importers:
         specifier: 0.86.2
         version: 0.86.2(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3)
 
+  packages/stripe:
+    dependencies:
+      '@davidilie/telemetry-core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/web:
     dependencies:
       '@davidilie/telemetry-core':

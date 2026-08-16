@@ -54,3 +54,8 @@ sources:
     license: MIT
     commit: 07d144459177a58a347e18be762cf8f04e63cb1d
     use: api-reference
+  - name: stripe-node
+    repository: https://github.com/stripe/stripe-node
+    license: MIT
+    commit: 8adba1d35fdb76ba4104e5d7ae1ac999649c7061
+    use: api-reference

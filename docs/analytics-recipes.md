@@ -170,6 +170,42 @@ For custom dimensions, first discover the flattened field name, verify it is
 bounded, then add it to `stats by`. Do not group by session, subject, URL,
 trace, error message, or other unbounded values in long-lived dashboard series.
 
+## Stripe commerce totals
+
+`@davidilie/telemetry-stripe` emits normalized events plus integer
+`minor_currency_unit` measurements. For dashboard totals, enable the Node/Next
+adapter's `measurementMode: "metrics"` or `"both"`, configure a metric reader,
+and allow only the package's documented bounded commerce attributes.
+
+After a canary, discover the backend's normalized series and label names in
+Grafana Explore. For a Prometheus-compatible pipeline, the intended query shape
+is:
+
+```promql
+sum by (commerce_currency, commerce_mode) (
+  increase(commerce_payment_amount_sum{
+    service_name="storefront",
+    commerce_outcome="succeeded"
+  }[$__range])
+)
+```
+
+The result remains an integer in the currency's minor unit. Divide only in the
+presentation layer using that currency's exponent; do not assume every
+currency has two decimal places. Never sum different currencies.
+
+Select exactly one canonical family for a financial question:
+
+- `commerce.payment.amount` from `payment_intent.succeeded` for payment volume,
+  or `commerce.invoice.amount` from `invoice.paid` for invoice collections;
+- `commerce.refund.amount` from `refund.created` for refunds;
+- `commerce.dispute.amount` from `charge.dispute.created` for opened disputes.
+
+Do not combine Checkout, PaymentIntent, Charge, and Invoice amounts: Stripe can
+emit each for one underlying payment. These panels are operational telemetry,
+not an accounting ledger. Reconciliation, MRR, LTV, taxes, exchange rates, and
+authoritative financial reporting belong in billing data/storage.
+
 ## Coarse session funnel
 
 This query answers “what fraction of observed Faro sessions containing the

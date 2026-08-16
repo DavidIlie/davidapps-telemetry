@@ -7,5 +7,6 @@ DavidApps Telemetry depends on permissively licensed open-source projects and us
 - Vercel Analytics and Vercel OTEL — MIT License — Copyright Vercel, Inc.
 - PostHog JavaScript SDKs — Apache-2.0/MIT — API reference only; no source is vendored.
 - Honeycomb OpenTelemetry React Native — MIT License — Copyright Honeycomb.io.
+- Stripe Node.js SDK — MIT License — Copyright Ask Bjørn Hansen and Stripe, Inc.; API reference only.
 
-Reference license texts are retained in `licenses/` so future adaptations cannot accidentally lose their attribution obligations. The current source tree does not vendor code from PostHog, Vercel, Honeycomb, or the OpenTelemetry demo.
+Reference license texts are retained in `licenses/` so future adaptations cannot accidentally lose their attribution obligations. The current source tree does not vendor code from PostHog, Vercel, Honeycomb, Stripe, or the OpenTelemetry demo.

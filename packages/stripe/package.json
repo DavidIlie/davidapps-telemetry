@@ -1,11 +1,13 @@
 {
-  "name": "@davidilie/telemetry-core",
+  "name": "@davidilie/telemetry-stripe",
   "version": "0.2.0",
-  "description": "Runtime-neutral telemetry client and adapter contracts.",
+  "description": "Strict Stripe webhook events and amount measurements for DavidApps telemetry.",
   "keywords": [
     "analytics",
+    "commerce",
     "observability",
     "opentelemetry",
+    "stripe",
     "telemetry"
   ],
   "author": "David Ilie <david@davidilie.com> (https://davidilie.com)",
@@ -13,7 +15,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/DavidIlie/davidapps-telemetry.git",
-    "directory": "packages/core"
+    "directory": "packages/stripe"
   },
   "homepage": "https://github.com/DavidIlie/davidapps-telemetry#readme",
   "bugs": {
@@ -47,11 +49,14 @@
     }
   },
   "scripts": {
-    "build": "tsdown src/index.ts --format esm,cjs --dts",
+    "build": "tsdown src/index.ts --format esm,cjs --dts --tsconfig tsconfig.build.json",
     "check": "tsc -p tsconfig.json",
     "test": "vitest run",
     "lint": "tsc -p tsconfig.json",
     "clean": "rm -rf dist coverage"
+  },
+  "dependencies": {
+    "@davidilie/telemetry-core": "workspace:*"
   },
   "publishConfig": {
     "access": "public",

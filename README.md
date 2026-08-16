@@ -37,9 +37,24 @@ boundary when delivery of the in-memory batch matters.
 | [`@davidilie/telemetry-node`](packages/node) | Node events, exceptions, logs, metrics, and active spans | OTLP through the registered OpenTelemetry provider; JSON stdout fallback for logs |
 | [`@davidilie/telemetry-next`](packages/next) | Next.js 16 server instrumentation and request-error reporting | `@vercel/otel` as the sole Node provider |
 | [`@davidilie/telemetry-react-native`](packages/react-native) | Expo/React Native JS errors, lifecycle, navigation, fetch, events, and spans | OTLP/HTTP traces through `/v1/traces` |
+| [`@davidilie/telemetry-stripe`](packages/stripe) | Verified Stripe webhook sales, refund, invoice, subscription, and dispute signals | Normalized events and integer minor-unit measurements through core |
 
 Install the runtime adapter; it brings in core. Depend on core directly only
 when implementing a new adapter or library integration.
+
+Stripe collection is a server-only integration layered onto an initialized
+Node or Next.js client:
+
+```sh
+pnpm add @davidilie/telemetry-stripe @davidilie/telemetry-node stripe
+```
+
+The application verifies the webhook signature with Stripe, atomically
+deduplicates the Stripe event ID, and then passes the verified event to
+`recordStripeWebhookEvent`. The mapper exports only bounded commerce fields and
+integer minor-currency-unit amounts; it never exports the raw webhook or Stripe
+identifiers. See the [Stripe package guide](packages/stripe) for the complete
+event table and copy-paste setup.
 
 ## Identity contract
 

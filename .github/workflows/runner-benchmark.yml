@@ -20,7 +20,7 @@ jobs:
           - name: GitHub hosted
             runner: ubuntu-24.04
           - name: Home fleet
-            runner: davidapps-linux-x64
+            runner: davidapps-ubuntu
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     steps:
